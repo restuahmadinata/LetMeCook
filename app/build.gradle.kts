@@ -44,6 +44,9 @@ dependencies {
     // Material Design (untuk ChipGroup, SearchView, dll. - seharusnya sudah ada dari setup awal)
     implementation("com.google.android.material:material:1.12.0") // Sesuaikan dengan versi yang Anda gunakan
 
+
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
+
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
 

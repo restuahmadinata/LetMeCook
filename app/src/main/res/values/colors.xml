@@ -1,4 +1,5 @@
 <resources>
+    <color name="shimmer_placeholder_color">#DDDDDD</color>
     <color name="md_theme_primary">#006B5F</color>
     <color name="md_theme_onPrimary">#FFFFFF</color>
     <color name="md_theme_primaryContainer">#9EF2E3</color>

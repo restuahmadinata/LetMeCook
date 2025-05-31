@@ -2,21 +2,22 @@
 package com.miraiprjkt.letmecook.fragment;
 
 import android.os.Bundle;
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.SearchView; // Pastikan import ini benar
-import android.os.Handler;
-import android.os.Looper;
+import androidx.appcompat.widget.SearchView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.shimmer.ShimmerFrameLayout;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.miraiprjkt.letmecook.R;
@@ -30,6 +31,7 @@ import com.miraiprjkt.letmecook.network.RetrofitClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,7 +42,8 @@ import retrofit2.Response;
 public class HomeFragment extends Fragment {
 
     private static final String TAG = "HomeFragment";
-    private static final long SEARCH_DELAY = 2000; // 2 detik
+    private static final long SEARCH_DELAY = 1500; // 1.5 detik (bisa disesuaikan)
+    private static final int NUMBER_OF_DISCOVER_RECIPES = 8; // Jumlah resep acak untuk Discover
 
     private RecyclerView recyclerViewRecipes;
     private RecipeAdapter recipeAdapter;
@@ -48,11 +51,33 @@ public class HomeFragment extends Fragment {
     private ApiService apiService;
     private ChipGroup chipGroupCategories;
     private SearchView searchViewRecipes;
-    private ProgressBar progressBarHome;
-    private TextView textViewNoResults;
+    // private ProgressBar progressBarHome; // Diganti Shimmer
+    private ShimmerFrameLayout shimmerViewContainer;
+    private LinearLayout layoutNoResults;
+    private ImageView imageViewNoResultsIcon;
+    private TextView textViewNoResultsMessage;
+    private MaterialButton buttonRetry;
 
     private Timer searchTimer;
-    private String currentSelectedCategory = null;
+    private String currentSelectedCategoryChipText = "Discover"; // Default ke Discover
+    private Random randomGenerator = new Random();
+
+    // Untuk Retry Button
+    private String lastFailedAction = "";
+    private String lastQueryOrCategory = "";
+
+
+    private String[] funnyNoResultsMessages = {
+            "Hmm, resepnya lagi ngumpet nih! Coba kata kunci lain?",
+            "Dapur kita lagi kosong melompong untuk pencarian ini. Yuk, cari yang lain!",
+            "Chef Google bilang: 'Resep tidak ditemukan, tapi jangan menyerah!'"
+    };
+
+    private String[] funnyNetworkErrorMessages = {
+            "Waduh, sinyalnya lagi jalan-jalan! Coba 'Ulangi' nanti.",
+            "Internetnya lagi masak rendang, lama nih. Klik 'Ulangi' aja!",
+            "Server resepnya lagi tidur siang. Bangunin pakai tombol 'Ulangi' yuk!"
+    };
 
 
     public HomeFragment() {
@@ -67,15 +92,18 @@ public class HomeFragment extends Fragment {
         recyclerViewRecipes = view.findViewById(R.id.recycler_view_recipes);
         chipGroupCategories = view.findViewById(R.id.chip_group_categories);
         searchViewRecipes = view.findViewById(R.id.search_view_recipes);
-        progressBarHome = view.findViewById(R.id.progress_bar_home);
-        textViewNoResults = view.findViewById(R.id.text_view_no_results);
+        shimmerViewContainer = view.findViewById(R.id.shimmer_view_container);
+        layoutNoResults = view.findViewById(R.id.layout_no_results);
+        imageViewNoResultsIcon = view.findViewById(R.id.image_no_results_icon);
+        textViewNoResultsMessage = view.findViewById(R.id.text_view_no_results_message);
+        buttonRetry = view.findViewById(R.id.button_retry);
 
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
         setupRecyclerView();
-        loadCategories();
-        loadInitialRecipes(); // Muat resep awal
+        loadCategories(); // Ini juga akan memanggil loadDiscoverRecipes jika chip Discover pertama kali dibuat
         setupSearchView();
+        setupRetryButton();
 
         return view;
     }
@@ -83,138 +111,229 @@ public class HomeFragment extends Fragment {
     private void setupRecyclerView() {
         mealList = new ArrayList<>();
         recipeAdapter = new RecipeAdapter(getContext(), mealList, meal -> {
-            // Handle klik item resep, misalnya buka DetailActivity/Fragment
             Toast.makeText(getContext(), "Clicked: " + meal.getStrMeal(), Toast.LENGTH_SHORT).show();
-            // Intent intent = new Intent(getActivity(), RecipeDetailActivity.class);
-            // intent.putExtra("MEAL_ID", meal.getIdMeal());
-            // startActivity(intent);
+            // TODO: Implementasi navigasi ke detail resep
+            // NavHostFragment.findNavController(HomeFragment.this)
+            // .navigate(R.id.action_homeFragment_to_recipeDetailFragment, bundleWithMealId);
         });
         recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewRecipes.setAdapter(recipeAdapter);
+
+        // Opsional: Animasi saat item pertama kali muncul
+        // Pastikan Anda memiliki file animasi di res/anim/layout_animation_fall_down.xml
+        // LayoutAnimationController controller = AnimationUtils.loadLayoutAnimation(getContext(), R.anim.layout_animation_fall_down);
+        // recyclerViewRecipes.setLayoutAnimation(controller);
+    }
+
+    private void setupRetryButton() {
+        buttonRetry.setOnClickListener(v -> {
+            if ("discover".equals(lastFailedAction)) {
+                loadDiscoverRecipes();
+            } else if ("category".equals(lastFailedAction) && lastQueryOrCategory != null) {
+                loadRecipesByCategory(lastQueryOrCategory);
+            } else if ("search".equals(lastFailedAction) && lastQueryOrCategory != null) {
+                searchRecipesByName(lastQueryOrCategory);
+            } else if ("categories".equals(lastFailedAction)) {
+                loadCategories(); // Jika gagal memuat kategori
+            }
+        });
     }
 
     private void showLoading(boolean isLoading) {
         if (isLoading) {
-            progressBarHome.setVisibility(View.VISIBLE);
+            shimmerViewContainer.startShimmer();
+            shimmerViewContainer.setVisibility(View.VISIBLE);
             recyclerViewRecipes.setVisibility(View.GONE);
-            textViewNoResults.setVisibility(View.GONE);
+            layoutNoResults.setVisibility(View.GONE);
         } else {
-            progressBarHome.setVisibility(View.GONE);
+            shimmerViewContainer.stopShimmer();
+            shimmerViewContainer.setVisibility(View.GONE);
+            // Visibilitas RecyclerView atau layoutNoResults akan diatur setelahnya
         }
     }
 
-    private void showNoResults(boolean show) {
+    private void showNoResults(boolean show, String messageContext) {
         if (show) {
-            textViewNoResults.setVisibility(View.VISIBLE);
-            recyclerViewRecipes.setVisibility(View.GONE);
+            recyclerViewRecipes.setVisibility(View.GONE); // Sembunyikan RecyclerView
+            layoutNoResults.setVisibility(View.VISIBLE);
+            String message;
+            int iconResId;
+
+            if ("network".equals(messageContext)) {
+                message = funnyNetworkErrorMessages[randomGenerator.nextInt(funnyNetworkErrorMessages.length)];
+                iconResId = R.drawable.ic_network_error; // Ganti dengan ikon error jaringan Anda
+                buttonRetry.setVisibility(View.VISIBLE);
+            } else { // "no_results"
+                message = funnyNoResultsMessages[randomGenerator.nextInt(funnyNoResultsMessages.length)];
+                iconResId = R.drawable.ic_search_off; // Ganti dengan ikon no results Anda
+                buttonRetry.setVisibility(View.GONE);
+            }
+            textViewNoResultsMessage.setText(message);
+            if (getContext() != null) { // Cek null untuk context
+                imageViewNoResultsIcon.setImageResource(iconResId);
+            }
+
         } else {
-            textViewNoResults.setVisibility(View.GONE);
-            recyclerViewRecipes.setVisibility(View.VISIBLE);
+            layoutNoResults.setVisibility(View.GONE);
+            recyclerViewRecipes.setVisibility(View.VISIBLE); // Tampilkan RecyclerView jika ada data
         }
     }
 
 
     private void loadCategories() {
-        showLoading(true);
+        // Tidak menampilkan shimmer untuk kategori, karena ini proses cepat di latar belakang
+        // Shimmer utama untuk pemuatan resep.
         apiService.getCategories().enqueue(new Callback<CategoryList>() {
             @Override
-            public void onResponse(Call<CategoryList> call, Response<CategoryList> response) {
-                // showLoading(false) akan dipanggil setelah resep dimuat
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Category> categories = response.body().getCategories();
-                    if (categories != null) {
-                        setupChipGroup(categories);
-                    }
+            public void onResponse(@NonNull Call<CategoryList> call, @NonNull Response<CategoryList> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getCategories() != null) {
+                    setupChipGroup(response.body().getCategories());
                 } else {
-                    Log.e(TAG, "Failed to load categories: " + response.message());
-                    Toast.makeText(getContext(), "Failed to load categories", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Failed to load categories: " + response.code());
+                    Toast.makeText(getContext(), "Gagal memuat kategori.", Toast.LENGTH_SHORT).show();
+                    lastFailedAction = "categories"; // Untuk retry
+                    // Bisa tampilkan tombol retry global jika kategori gagal dimuat? Atau biarkan saja?
+                    // Untuk saat ini, biarkan. Jika kategori gagal, "Discover" masih bisa berfungsi.
                 }
             }
 
             @Override
-            public void onFailure(Call<CategoryList> call, Throwable t) {
-                // showLoading(false) akan dipanggil setelah resep dimuat
+            public void onFailure(@NonNull Call<CategoryList> call, @NonNull Throwable t) {
                 Log.e(TAG, "Error loading categories: " + t.getMessage());
-                Toast.makeText(getContext(), "Error loading categories", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                lastFailedAction = "categories";
             }
         });
     }
 
     private void setupChipGroup(List<Category> categories) {
-        chipGroupCategories.removeAllViews(); // Hapus chip lama jika ada
+        if (getContext() == null) { // Pastikan context tidak null
+            return;
+        }
+        chipGroupCategories.removeAllViews();
+        chipGroupCategories.setSingleSelection(true); // Tetap gunakan single selection
 
-        // Tambahkan Chip "All" atau "Default"
-        Chip allChip = new Chip(getContext());
-        allChip.setText("All Recipes");
-        allChip.setCheckable(true);
-        allChip.setChecked(true); // Set default "All" checked
-        allChip.setOnClickListener(v -> {
-            currentSelectedCategory = null; // Reset kategori
-            searchViewRecipes.setQuery("", false); // Reset search bar
-            loadInitialRecipes(); // Muat resep awal (misalnya by first letter 'a')
-            chipGroupCategories.clearCheck(); // Hapus centang dari chip lain
-            allChip.setChecked(true); // Centang kembali chip "All"
+        // Chip "Discover" (menggunakan style default dari tema)
+        Chip discoverChip = new Chip(getContext()); // Langsung buat instance Chip
+        discoverChip.setText("Discover");
+        discoverChip.setId(View.generateViewId()); // Penting untuk singleSelection dan state
+        discoverChip.setCheckable(true); // Agar bisa di-check
+        // discoverChip.setChecked(true); // Akan di-set setelah semua chip ditambahkan
+        discoverChip.setOnClickListener(v -> {
+            currentSelectedCategoryChipText = "Discover";
+            searchViewRecipes.setQuery("", false);
+            searchViewRecipes.clearFocus();
+            loadDiscoverRecipes();
         });
-        chipGroupCategories.addView(allChip);
-
+        chipGroupCategories.addView(discoverChip);
 
         for (Category category : categories) {
-            Chip chip = new Chip(getContext());
+            Chip chip = new Chip(getContext()); // Langsung buat instance Chip
             chip.setText(category.getStrCategory());
+            chip.setId(View.generateViewId());
             chip.setCheckable(true);
             chip.setOnClickListener(v -> {
-                if (chip.isChecked()) {
-                    currentSelectedCategory = category.getStrCategory();
-                    loadRecipesByCategory(currentSelectedCategory);
-                } else {
-                    // Jika chip di-uncheck, dan tidak ada chip lain yang ter-check,
-                    // maka kembali ke "All Recipes" atau kondisi default.
-                    // Atau biarkan, tergantung behavior yang diinginkan.
-                    // Untuk singleSelection=true, ini mungkin tidak terlalu relevan
-                    // karena hanya satu yang bisa ter-check.
-                    // Jika tidak ada yang ter-check setelah uncheck, muat resep awal.
-                    if (chipGroupCategories.getCheckedChipId() == View.NO_ID) {
-                        allChip.setChecked(true); // Otomatis memicu listener "All"
-                    }
-                }
+                currentSelectedCategoryChipText = category.getStrCategory();
+                searchViewRecipes.setQuery("", false);
+                searchViewRecipes.clearFocus();
+                loadRecipesByCategory(category.getStrCategory());
             });
             chipGroupCategories.addView(chip);
         }
-        chipGroupCategories.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == View.NO_ID && !allChip.isChecked()) {
-                // Jika tidak ada chip yang tercentang (misalnya setelah kategori yang dipilih gagal dimuat dan user menghapus centang)
-                // Maka secara default kembali ke 'All Recipes'
-                allChip.setChecked(true);
+
+        // Set "Discover" as checked by default and load its content
+        // setelah semua chip ditambahkan dan ID-nya sudah ter-generate.
+        if (chipGroupCategories.getChildCount() > 0) {
+            Chip firstChip = (Chip) chipGroupCategories.getChildAt(0); // Ini adalah chip "Discover"
+            // chipGroupCategories.check(firstChip.getId()); // Set chip pertama (Discover) terpilih
+            // Atau jika Anda ingin memicu listener saat pertama kali:
+            firstChip.setChecked(true); // Ini akan memicu listener dari chip Discover
+            // jika OnCheckedChangeListener diatur di ChipGroup,
+            // atau Anda bisa memanggil loadDiscoverRecipes() secara eksplisit di sini.
+
+            // Untuk memastikan loadDiscoverRecipes dipanggil saat pertama kali jika belum ada listener global
+            // yang menangani check awal:
+            if (mealList.isEmpty()) { // Hanya muat jika daftar masih kosong
+                loadDiscoverRecipes();
             }
-            // Jika ada chip lain yang tercentang selain 'All', maka hilangkan centang 'All'
-            else if (checkedId != allChip.getId() && allChip.isChecked()) {
-                allChip.setChecked(false);
-            }
-        });
-    }
-
-
-    private void loadInitialRecipes() {
-        fetchMeals(apiService.listMealsByFirstLetter("a"), "Failed to load initial recipes");
-    }
-
-    private void loadRecipesByCategory(String categoryName) {
-        if (categoryName == null || categoryName.equalsIgnoreCase("All Recipes")) {
-            loadInitialRecipes();
-        } else {
-            fetchMeals(apiService.filterByCategory(categoryName), "Failed to load recipes for category: " + categoryName);
         }
     }
 
+
+    private void loadDiscoverRecipes() {
+        showLoading(true);
+        lastFailedAction = "discover";
+        lastQueryOrCategory = ""; // Tidak ada query spesifik untuk discover
+
+        final List<Meal> fetchedDiscoverMeals = new ArrayList<>();
+        final int[] successfulCalls = {0};
+        final int[] totalCallsMade = {0};
+
+        if (mealList != null) mealList.clear(); else mealList = new ArrayList<>();
+        if (recipeAdapter != null) recipeAdapter.notifyDataSetChanged();
+
+
+        for (int i = 0; i < NUMBER_OF_DISCOVER_RECIPES; i++) {
+            apiService.getRandomMeal().enqueue(new Callback<MealList>() {
+                @Override
+                public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
+                    totalCallsMade[0]++;
+                    if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null && !response.body().getMeals().isEmpty()) {
+                        fetchedDiscoverMeals.add(response.body().getMeals().get(0));
+                        successfulCalls[0]++;
+                    }
+                    checkDiscoverFetchCompletion(totalCallsMade[0], successfulCalls[0], fetchedDiscoverMeals);
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
+                    totalCallsMade[0]++;
+                    Log.e(TAG, "API Call Failed (Random Meal): " + t.getMessage());
+                    checkDiscoverFetchCompletion(totalCallsMade[0], successfulCalls[0], fetchedDiscoverMeals);
+                }
+            });
+        }
+    }
+
+    private void checkDiscoverFetchCompletion(int callsMade, int successful, List<Meal> meals) {
+        if (callsMade == NUMBER_OF_DISCOVER_RECIPES) {
+            showLoading(false);
+            if (!meals.isEmpty()) {
+                mealList.clear();
+                mealList.addAll(meals);
+                recipeAdapter.updateData(mealList); // Gunakan metode updateData
+                showNoResults(false, "");
+                // recyclerViewRecipes.scheduleLayoutAnimation(); // Jalankan animasi jika ada
+            } else {
+                mealList.clear();
+                recipeAdapter.updateData(mealList);
+                showNoResults(true, "network"); // Anggap gagal total sebagai error jaringan
+            }
+            Log.d(TAG, "Discover meals fetch complete. Success: " + successful + "/" + NUMBER_OF_DISCOVER_RECIPES);
+        }
+    }
+
+
+    private void loadRecipesByCategory(String categoryName) {
+        lastFailedAction = "category";
+        lastQueryOrCategory = categoryName;
+        fetchMeals(apiService.filterByCategory(categoryName), "Failed to load recipes for category: " + categoryName);
+    }
+
     private void searchRecipesByName(String query) {
+        lastFailedAction = "search";
+        lastQueryOrCategory = query;
         fetchMeals(apiService.searchMeals(query), "Failed to search recipes for: " + query);
     }
 
-    private void fetchMeals(Call<MealList> call, String errorMessagePrefix) {
+    private void fetchMeals(Call<MealList> call, String logErrorMessagePrefix) {
         showLoading(true);
+        if (mealList != null) mealList.clear(); else mealList = new ArrayList<>(); // Kosongkan list sebelum fetch baru
+        if (recipeAdapter != null) recipeAdapter.notifyDataSetChanged();
+
         call.enqueue(new Callback<MealList>() {
             @Override
-            public void onResponse(Call<MealList> call, Response<MealList> response) {
+            public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
                 showLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
                     List<Meal> newMeals = response.body().getMeals();
@@ -222,30 +341,29 @@ public class HomeFragment extends Fragment {
                         mealList.clear();
                         mealList.addAll(newMeals);
                         recipeAdapter.updateData(mealList);
-                        showNoResults(false);
+                        showNoResults(false, "");
+                        // recyclerViewRecipes.scheduleLayoutAnimation(); // Jalankan animasi jika ada
                     } else {
                         mealList.clear();
-                        recipeAdapter.updateData(mealList); // Kosongkan list
-                        showNoResults(true);
-                        Log.d(TAG, errorMessagePrefix + ": No meals found or null response.");
+                        recipeAdapter.updateData(mealList);
+                        showNoResults(true, "no_results");
+                        Log.d(TAG, logErrorMessagePrefix + ": No meals found or null response.");
                     }
                 } else {
                     mealList.clear();
                     recipeAdapter.updateData(mealList);
-                    showNoResults(true);
-                    Log.e(TAG, errorMessagePrefix + ": " + response.code() + " " + response.message());
-                    // Toast.makeText(getContext(), errorMessagePrefix, Toast.LENGTH_SHORT).show(); // Mungkin terlalu banyak toast
+                    showNoResults(true, "network");
+                    Log.e(TAG, logErrorMessagePrefix + ": " + response.code() + " " + response.message());
                 }
             }
 
             @Override
-            public void onFailure(Call<MealList> call, Throwable t) {
+            public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
                 showLoading(false);
                 mealList.clear();
                 recipeAdapter.updateData(mealList);
-                showNoResults(true);
-                Log.e(TAG, errorMessagePrefix + " (Network Error): " + t.getMessage());
-                Toast.makeText(getContext(), "Network Error. Please try again.", Toast.LENGTH_SHORT).show();
+                showNoResults(true, "network");
+                Log.e(TAG, logErrorMessagePrefix + " (Network Error): " + t.getMessage());
             }
         });
     }
@@ -255,116 +373,94 @@ public class HomeFragment extends Fragment {
         searchViewRecipes.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                // User menekan tombol search / enter
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-                if (!query.isEmpty()) {
-                    // Hapus centang kategori jika ada
-                    chipGroupCategories.clearCheck();
-                    // Jika chip "All" masih tercentang (karena clearCheck tidak memicu listener),
-                    // pastikan ia tidak tercentang sebelum search.
-                    Chip allChip = (Chip) chipGroupCategories.getChildAt(0); // Asumsi "All" adalah chip pertama
-                    if (allChip != null && allChip.isChecked()) {
-                        allChip.setChecked(false);
-                    }
-                    currentSelectedCategory = null;
-                    searchRecipesByName(query);
-                } else {
-                    // Jika query kosong, kembali ke tampilan default (misalnya, kategori "All")
-                    Chip allChip = (Chip) chipGroupCategories.getChildAt(0);
-                    if (allChip != null) {
-                        allChip.setChecked(true); // Ini akan memicu listener "All" untuk memuat resep awal
-                    } else {
-                        loadInitialRecipes();
-                    }
-                }
-                return true; // Menandakan event telah di-handle
+                if (searchTimer != null) searchTimer.cancel();
+                performSearch(query);
+                searchViewRecipes.clearFocus(); // Sembunyikan keyboard
+                return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
+                if (searchTimer != null) searchTimer.cancel();
                 searchTimer = new Timer();
                 searchTimer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        // Jalankan di UI thread
-                        new Handler(Looper.getMainLooper()).post(() -> {
-                            if (getActivity() == null || !isAdded()) {
-                                return; // Pastikan fragment masih ter-attach
-                            }
-                            if (!newText.isEmpty()) {
-                                // Hapus centang kategori jika ada
-                                chipGroupCategories.clearCheck();
-                                Chip allChip = (Chip) chipGroupCategories.getChildAt(0); // Asumsi "All" adalah chip pertama
-                                if (allChip != null && allChip.isChecked()) {
-                                    allChip.setChecked(false);
-                                }
-                                currentSelectedCategory = null;
-                                searchRecipesByName(newText);
-                            } else if (searchViewRecipes.getQuery().length() == 0 && !searchViewRecipes.hasFocus()){
-                                // Jika teks kosong dan search view tidak fokus (misalnya user menghapus semua teks dan klik di luar)
-                                // Kembali ke tampilan default atau kategori yang terakhir dipilih sebelum search
-                                if(currentSelectedCategory != null) {
-                                    // Cari dan centang kembali chip kategori yang terakhir dipilih
-                                    for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
-                                        Chip chip = (Chip) chipGroupCategories.getChildAt(i);
-                                        if (chip.getText().toString().equalsIgnoreCase(currentSelectedCategory)) {
-                                            chip.setChecked(true);
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    Chip allChip = (Chip) chipGroupCategories.getChildAt(0);
-                                    if (allChip != null) {
-                                        allChip.setChecked(true);
-                                    } else {
-                                        loadInitialRecipes();
-                                    }
-                                }
-                            } else if (newText.isEmpty() && chipGroupCategories.getCheckedChipId() == View.NO_ID) {
-                                // Jika teks dikosongkan dan tidak ada kategori yang dipilih, kembali ke "All"
-                                Chip allChip = (Chip) chipGroupCategories.getChildAt(0);
-                                if (allChip != null) {
-                                    allChip.setChecked(true); // Ini akan memicu listener "All"
-                                } else {
-                                    loadInitialRecipes();
-                                }
-                            }
-                        });
+                        if (getActivity() != null) {
+                            getActivity().runOnUiThread(() -> performSearch(newText));
+                        }
                     }
                 }, SEARCH_DELAY);
-                return true; // Menandakan event telah di-handle
+                return true;
             }
         });
-        // Listener tambahan untuk tombol close (X) di SearchView
+
         ImageView closeButton = searchViewRecipes.findViewById(androidx.appcompat.R.id.search_close_btn);
         if (closeButton != null) {
             closeButton.setOnClickListener(v -> {
-                searchViewRecipes.setQuery("", false); // Hapus teks query
-                searchViewRecipes.clearFocus(); // Hapus fokus
-                // Kembali ke "All Recipes" atau kategori yang terakhir dipilih (jika ada)
-                if (currentSelectedCategory != null) {
-                    for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
-                        Chip chip = (Chip) chipGroupCategories.getChildAt(i);
-                        if (chip.getText().toString().equalsIgnoreCase(currentSelectedCategory)) {
-                            chip.setChecked(true); // Ini akan memicu filter by category
-                            return;
-                        }
+                searchViewRecipes.setQuery("", false);
+                searchViewRecipes.clearFocus();
+                // Kembali ke kategori yang terakhir dipilih atau "Discover"
+                chipGroupCategories.clearCheck(); // Hapus semua centang dulu
+                boolean chipRestored = false;
+                for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
+                    Chip chip = (Chip) chipGroupCategories.getChildAt(i);
+                    if (chip.getText().toString().equals(currentSelectedCategoryChipText)) {
+                        chip.setChecked(true); // Ini akan memicu OnClickListener chip tersebut
+                        chipRestored = true;
+                        break;
                     }
                 }
-                // Jika tidak ada kategori sebelumnya atau currentSelectedCategory null, default ke "All"
-                Chip allChip = (Chip) chipGroupCategories.getChildAt(0); // Asumsi "All" adalah chip pertama
-                if (allChip != null) {
-                    allChip.setChecked(true); // Ini akan memicu listener "All"
-                } else {
-                    loadInitialRecipes();
+                if (!chipRestored && chipGroupCategories.getChildCount() > 0) {
+                    // Jika tidak ada yang cocok (misalnya currentSelectedCategoryChipText belum diset dengan benar), default ke Discover
+                    ((Chip)chipGroupCategories.getChildAt(0)).setChecked(true);
                 }
             });
         }
+    }
+
+    private void performSearch(String query) {
+        if (query == null) return;
+
+        if (!query.isEmpty()) {
+            chipGroupCategories.clearCheck(); // Hapus centang kategori saat mencari
+            currentSelectedCategoryChipText = ""; // Reset kategori terpilih sementara
+            searchRecipesByName(query);
+        } else {
+            // Jika query kosong, kembali ke kategori terakhir yang aktif atau Discover
+            chipGroupCategories.clearCheck();
+            boolean chipRestored = false;
+            for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
+                Chip chip = (Chip) chipGroupCategories.getChildAt(i);
+                if (chip.getText().toString().equals(currentSelectedCategoryChipText) || (currentSelectedCategoryChipText.equals("Discover") && i == 0) ) {
+                    if(!chip.isChecked()) chip.setChecked(true); else chip.callOnClick(); // Panggil click jika sudah tercentang untuk refresh
+                    chipRestored = true;
+                    break;
+                }
+            }
+            if (!chipRestored && chipGroupCategories.getChildCount() > 0) {
+                // Default ke Discover jika tidak ada yang cocok
+                Chip firstChip = (Chip)chipGroupCategories.getChildAt(0);
+                if(!firstChip.isChecked()) firstChip.setChecked(true); else firstChip.callOnClick();
+            }
+        }
+    }
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (shimmerViewContainer != null && shimmerViewContainer.getVisibility() == View.VISIBLE && !shimmerViewContainer.isShimmerStarted()) {
+            shimmerViewContainer.startShimmer();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (shimmerViewContainer != null && shimmerViewContainer.isShimmerStarted()) {
+            shimmerViewContainer.stopShimmer();
+        }
+        super.onPause();
     }
 
     @Override

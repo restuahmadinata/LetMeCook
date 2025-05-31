@@ -9,6 +9,10 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface ApiService {
+
+    @GET("api/json/v1/1/random.php")
+    Call<MealList> getRandomMeal();
+
     @GET("api/json/v1/1/categories.php")
     Call<CategoryList> getCategories();
 
