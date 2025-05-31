@@ -33,6 +33,17 @@ android {
 
 dependencies {
 
+    // Retrofit & Gson Converter (untuk networking)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0") // atau versi terbaru
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0") // atau versi terbaru yang kompatibel
+
+    // Glide (untuk memuat gambar dari URL)
+    implementation("com.github.bumptech.glide:glide:4.12.0") // atau versi terbaru
+    annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
+
+    // Material Design (untuk ChipGroup, SearchView, dll. - seharusnya sudah ada dari setup awal)
+    implementation("com.google.android.material:material:1.12.0") // Sesuaikan dengan versi yang Anda gunakan
+
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
 
