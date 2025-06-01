@@ -15,7 +15,6 @@ import com.miraiprjkt.letmecook.model.Meal;
 import java.util.List;
 
 public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeViewHolder> {
-
     private Context context;
     private List<Meal> mealList;
     private OnItemClickListener listener;
@@ -27,7 +26,7 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
     public RecipeAdapter(Context context, List<Meal> mealList, OnItemClickListener listener) {
         this.context = context;
         this.mealList = mealList;
-        this.listener = listener;
+        this.listener = listener; // Listener ini sekarang akan diimplementasikan di HomeFragment
     }
 
     @NonNull
@@ -67,11 +66,15 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             textRecipeName.setText(meal.getStrMeal());
             Glide.with(itemView.getContext())
                     .load(meal.getStrMealThumb())
-                    .placeholder(R.drawable.ic_launcher_background) // Ganti dengan placeholder yang sesuai
-                    .error(R.drawable.ic_launcher_foreground) // Ganti dengan error image yang sesuai
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_foreground)
                     .into(imageRecipe);
 
-            itemView.setOnClickListener(v -> listener.onItemClick(meal));
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(meal); // Panggil listener yang diteruskan dari Fragment
+                }
+            });
         }
     }
 }

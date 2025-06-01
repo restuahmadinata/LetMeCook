@@ -25,4 +25,8 @@ public interface ApiService {
     // Endpoint untuk "semua" resep (misalnya, berdasarkan huruf pertama)
     @GET("api/json/v1/1/search.php")
     Call<MealList> listMealsByFirstLetter(@Query("f") String firstLetter);
+
+    @GET("api/json/v1/1/lookup.php")
+    Call<MealList> getMealDetails(@Query("i") String mealId);
+
 }

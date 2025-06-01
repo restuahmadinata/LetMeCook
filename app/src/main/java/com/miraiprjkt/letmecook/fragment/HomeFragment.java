@@ -4,6 +4,8 @@ package com.miraiprjkt.letmecook.fragment;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.SearchView;
@@ -111,18 +113,18 @@ public class HomeFragment extends Fragment {
     private void setupRecyclerView() {
         mealList = new ArrayList<>();
         recipeAdapter = new RecipeAdapter(getContext(), mealList, meal -> {
-            Toast.makeText(getContext(), "Clicked: " + meal.getStrMeal(), Toast.LENGTH_SHORT).show();
-            // TODO: Implementasi navigasi ke detail resep
-            // NavHostFragment.findNavController(HomeFragment.this)
-            // .navigate(R.id.action_homeFragment_to_recipeDetailFragment, bundleWithMealId);
+            // Navigasi ke RecipeDetailFragment
+            Bundle bundle = new Bundle();
+            bundle.putString(RecipeDetailFragment.ARG_MEAL_ID, meal.getIdMeal());
+            bundle.putString("mealName", meal.getStrMeal()); // Kirim nama untuk judul sementara
+
+            // Dapatkan NavController dari HomeFragment
+            NavController navController = NavHostFragment.findNavController(HomeFragment.this);
+            navController.navigate(R.id.action_homeFragment_to_recipeDetailFragment, bundle);
         });
         recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewRecipes.setAdapter(recipeAdapter);
-
-        // Opsional: Animasi saat item pertama kali muncul
-        // Pastikan Anda memiliki file animasi di res/anim/layout_animation_fall_down.xml
-        // LayoutAnimationController controller = AnimationUtils.loadLayoutAnimation(getContext(), R.anim.layout_animation_fall_down);
-        // recyclerViewRecipes.setLayoutAnimation(controller);
+        // ... (animasi layout jika ada)
     }
 
     private void setupRetryButton() {
