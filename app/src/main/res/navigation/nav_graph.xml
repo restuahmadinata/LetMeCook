@@ -7,29 +7,28 @@
     <fragment
         android:id="@+id/navigation_home"
         android:name="com.miraiprjkt.letmecook.fragment.HomeFragment"
-        android:label="LetMeCook" tools:layout="@layout/fragment_home">
+        android:label="@string/app_name" tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_homeFragment_to_recipeDetailFragment"
             app:destination="@id/recipeDetailFragment"
-            app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"
+            app:enterAnim="@anim/nav_default_enter_anim"
+            app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim"
             app:popExitAnim="@anim/nav_default_pop_exit_anim"/>
     </fragment>
     <fragment
         android:id="@+id/navigation_favorites"
         android:name="com.miraiprjkt.letmecook.fragment.FavoritesFragment"
-        android:label="Favorites"
-        tools:layout="@layout/fragment_favorites" />
+        android:label="Favorites" tools:layout="@layout/fragment_favorites" />
     <fragment
         android:id="@+id/navigation_settings"
         android:name="com.miraiprjkt.letmecook.fragment.SettingsFragment"
-        android:label="Settings"
-        tools:layout="@layout/fragment_settings" />
+        android:label="Settings" tools:layout="@layout/fragment_settings" />
 
     <fragment
         android:id="@+id/recipeDetailFragment"
         android:name="com.miraiprjkt.letmecook.fragment.RecipeDetailFragment"
-        android:label="{mealName}" tools:layout="@layout/fragment_recipe_detail">
+        android:label="Recipe Detail" tools:layout="@layout/fragment_recipe_detail">
         <argument
             android:name="meal_id"
             app:argType="string" />
