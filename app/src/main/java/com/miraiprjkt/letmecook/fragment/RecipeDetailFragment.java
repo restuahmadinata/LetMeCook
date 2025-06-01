@@ -1,27 +1,28 @@
 // app/src/main/java/com/miraiprjkt/letmecook/RecipeDetailFragment.java
 package com.miraiprjkt.letmecook.fragment;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView; // Import NestedScrollView
 import androidx.fragment.app.Fragment;
-import androidx.navigation.NavController;
-import androidx.navigation.fragment.NavHostFragment;
-
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.miraiprjkt.letmecook.R;
@@ -29,9 +30,8 @@ import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
 import com.miraiprjkt.letmecook.network.RetrofitClient;
-
 import java.util.List;
-
+import java.util.Random;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -47,12 +47,24 @@ public class RecipeDetailFragment extends Fragment {
     private ImageView imageMealDetailThumb;
     private TextView textMealDetailName, textMealDetailCategory, textMealDetailArea;
     private TextView textMealDetailIngredients, textMealDetailInstructions, textMealDetailSource;
-    private TextView labelSource; // Untuk menampilkan/menyembunyikan label Source
+    private TextView labelSource;
     private ChipGroup chipGroupDetailTags;
-    private Button buttonYoutube;
+    private MaterialButton buttonYoutube;
     private ProgressBar progressBarDetail;
-    private TextView textViewDetailError;
-    private View contentContainer; // Root ConstraintLayout untuk menyembunyikan saat loading/error
+
+    private NestedScrollView nestedScrollViewContent; // Mengganti contentContainer
+
+    private LinearLayout layoutDetailError;
+    private ImageView imageDetailErrorIcon;
+    private TextView textViewDetailErrorMessage;
+    private MaterialButton buttonDetailRetry;
+    private Random randomGenerator = new Random();
+
+    private String[] funnyNetworkErrorMessages = {
+            "Duh, resepnya gak mau keluar tanpa internet! Coba 'Ulangi'.",
+            "Sinyal ke dapur resep lagi putus, sambungin lagi yuk!",
+            "Resep ini lagi malu-malu, butuh internet biar PD. Klik 'Ulangi'."
+    };
 
     public RecipeDetailFragment() {
         // Required empty public constructor
@@ -72,6 +84,7 @@ public class RecipeDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_recipe_detail, container, false);
 
+        nestedScrollViewContent = view.findViewById(R.id.scroll_view_recipe_detail_content); // Inisialisasi NestedScrollView
         imageMealDetailThumb = view.findViewById(R.id.image_meal_detail_thumb);
         textMealDetailName = view.findViewById(R.id.text_meal_detail_name);
         chipGroupDetailTags = view.findViewById(R.id.chip_group_detail_tags);
@@ -83,68 +96,99 @@ public class RecipeDetailFragment extends Fragment {
         textMealDetailSource = view.findViewById(R.id.text_meal_detail_source);
         labelSource = view.findViewById(R.id.label_source);
         progressBarDetail = view.findViewById(R.id.progress_bar_detail);
-        textViewDetailError = view.findViewById(R.id.text_view_detail_error);
-        contentContainer = (View) view.findViewById(R.id.image_meal_detail_thumb).getParent();
 
-        // Atur tombol back di Toolbar (jika Activity memiliki Toolbar)
-        // Ini memerlukan setup dengan NavController di Activity
-        // ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        // ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle(""); // Atau nama resep
+        layoutDetailError = view.findViewById(R.id.layout_detail_error);
+        imageDetailErrorIcon = view.findViewById(R.id.image_detail_error_icon);
+        textViewDetailErrorMessage = view.findViewById(R.id.text_view_detail_error_message);
+        buttonDetailRetry = view.findViewById(R.id.button_detail_retry);
+
+        buttonDetailRetry.setOnClickListener(v -> {
+            if (mealId != null && !mealId.isEmpty()) {
+                loadRecipeDetails(mealId);
+            }
+        });
 
         if (mealId != null && !mealId.isEmpty()) {
             loadRecipeDetails(mealId);
         } else {
-            showError("Recipe ID not found.");
+            showErrorState("Recipe ID not found.", false);
         }
 
         return view;
     }
 
-    private void showLoading(boolean isLoading) {
+    private boolean isNetworkAvailable() {
+        if (getContext() == null) return false;
+        ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+        }
+        return false;
+    }
+
+    private void showLoadingState(boolean isLoading) {
         if (isLoading) {
             progressBarDetail.setVisibility(View.VISIBLE);
-            if (contentContainer instanceof ViewGroup) {
-                ((ViewGroup)contentContainer).setVisibility(View.GONE);
-            }
-            textViewDetailError.setVisibility(View.GONE);
+            if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.GONE);
+            layoutDetailError.setVisibility(View.GONE);
         } else {
             progressBarDetail.setVisibility(View.GONE);
-            if (contentContainer instanceof ViewGroup) {
-                ((ViewGroup)contentContainer).setVisibility(View.VISIBLE);
-            }
         }
     }
 
-    private void showError(String message) {
-        showLoading(false);
-        if (contentContainer instanceof ViewGroup) {
-            ((ViewGroup)contentContainer).setVisibility(View.GONE);
+    private void showErrorState(String customMessage, boolean isNetworkError) {
+        showLoadingState(false);
+        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.GONE);
+        layoutDetailError.setVisibility(View.VISIBLE);
+
+        String message;
+        int iconResId = R.drawable.ic_search_off;
+
+        if (isNetworkError) {
+            message = funnyNetworkErrorMessages[randomGenerator.nextInt(funnyNetworkErrorMessages.length)];
+            iconResId = R.drawable.ic_network_error;
+            buttonDetailRetry.setVisibility(View.VISIBLE);
+        } else {
+            message = (customMessage != null) ? customMessage : "An error occurred.";
+            buttonDetailRetry.setVisibility(View.GONE);
         }
-        textViewDetailError.setText(message);
-        textViewDetailError.setVisibility(View.VISIBLE);
-        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+        textViewDetailErrorMessage.setText(message);
+        if (getContext() != null && imageDetailErrorIcon != null) { // Tambah null check untuk imageDetailErrorIcon
+            imageDetailErrorIcon.setImageResource(iconResId);
+        }
     }
 
+    private void showContentState() {
+        showLoadingState(false);
+        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.VISIBLE);
+        layoutDetailError.setVisibility(View.GONE);
+    }
 
     private void loadRecipeDetails(String id) {
-        showLoading(true);
+        if (!isNetworkAvailable()) {
+            showErrorState(null, true);
+            return;
+        }
+        showLoadingState(true);
         apiService.getMealDetails(id).enqueue(new Callback<MealList>() {
             @Override
             public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
-                showLoading(false);
+                if (!isAdded()) return; // Pastikan fragment masih ter-attach
                 if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null && !response.body().getMeals().isEmpty()) {
-                    Meal meal = response.body().getMeals().get(0); // Harusnya hanya satu meal
+                    Meal meal = response.body().getMeals().get(0);
                     displayRecipeDetails(meal);
+                    showContentState();
                 } else {
-                    showError("Failed to load recipe details. Code: " + response.code());
-                    Log.e(TAG, "Failed to load details: " + response.message());
+                    showErrorState("Failed to load recipe details. Code: " + response.code(), true);
+                    Log.e(TAG, "Failed to load details: " + response.code() + " " + response.message());
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
-                showLoading(false);
-                showError("Network error: " + t.getMessage());
+                if (!isAdded()) return; // Pastikan fragment masih ter-attach
+                showErrorState("Network error. Please try again.", true);
                 Log.e(TAG, "Error loading details: " + t.getMessage());
             }
         });
@@ -152,42 +196,31 @@ public class RecipeDetailFragment extends Fragment {
 
     private void displayRecipeDetails(Meal meal) {
         if (meal == null || getContext() == null) {
-            showError("Recipe data is invalid.");
+            showErrorState("Recipe data is invalid.", false);
             return;
         }
-        if (contentContainer instanceof ViewGroup) {
-            ((ViewGroup)contentContainer).setVisibility(View.VISIBLE); // Pastikan konten terlihat
-        }
-        textViewDetailError.setVisibility(View.GONE); // Sembunyikan pesan error jika ada
-
-
-        if (getActivity() != null) {
-            // Mengatur judul ActionBar/Toolbar
-            // ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle(meal.getStrMeal());
-            // Atau jika menggunakan NavController untuk title:
-            // NavController navController = NavHostFragment.findNavController(this);
-            // navController.getCurrentDestination().setLabel(meal.getStrMeal());
-        }
+        // Pastikan layout error disembunyikan jika sampai sini
+        layoutDetailError.setVisibility(View.GONE);
+        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.VISIBLE);
 
 
         Glide.with(getContext())
                 .load(meal.getStrMealThumb())
-                .placeholder(R.drawable.ic_launcher_background) // Ganti dengan placeholder
-                .error(R.drawable.ic_launcher_foreground)       // Ganti dengan error image
+                .placeholder(R.drawable.ic_launcher_background)
+                .error(R.drawable.ic_launcher_foreground)
                 .into(imageMealDetailThumb);
 
         textMealDetailName.setText(meal.getStrMeal());
         textMealDetailCategory.setText("Category: " + (meal.getStrCategory() != null ? meal.getStrCategory() : "N/A"));
         textMealDetailArea.setText("Area: " + (meal.getStrArea() != null ? meal.getStrArea() : "N/A"));
 
-        // Tampilkan Tags
         chipGroupDetailTags.removeAllViews();
-        if (meal.getStrTags() != null && !meal.getStrTags().isEmpty()) {
+        if (meal.getStrTags() != null && !meal.getStrTags().trim().isEmpty()) {
             String[] tags = meal.getStrTags().split(",");
             for (String tag : tags) {
+                if (tag.trim().isEmpty()) continue;
                 Chip chip = new Chip(getContext());
                 chip.setText(tag.trim());
-                // chip.setChipBackgroundColorResource(R.color.your_chip_color); // Kustomisasi jika perlu
                 chipGroupDetailTags.addView(chip);
             }
             chipGroupDetailTags.setVisibility(View.VISIBLE);
@@ -195,7 +228,6 @@ public class RecipeDetailFragment extends Fragment {
             chipGroupDetailTags.setVisibility(View.GONE);
         }
 
-        // Tampilkan Bahan dan Takaran
         List<String> ingredientsWithMeasures = meal.getIngredientsWithMeasures();
         if (!ingredientsWithMeasures.isEmpty()) {
             StringBuilder ingredientsBuilder = new StringBuilder();
@@ -207,8 +239,8 @@ public class RecipeDetailFragment extends Fragment {
             textMealDetailIngredients.setText("No ingredients listed.");
         }
 
+        textMealDetailInstructions.setText(meal.getStrInstructions() != null ? meal.getStrInstructions().replace("\r\n", "\n\n").replace("\n", "\n\n") : "No instructions available.");
 
-        textMealDetailInstructions.setText(meal.getStrInstructions() != null ? meal.getStrInstructions().replace("\n", "\n\n") : "No instructions available.");
 
         if (meal.getStrYoutube() != null && !meal.getStrYoutube().trim().isEmpty()) {
             buttonYoutube.setVisibility(View.VISIBLE);
