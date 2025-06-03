@@ -1,5 +1,5 @@
 // app/src/main/java/com/miraiprjkt/letmecook/fragment/RecipeDetailFragment.java
-package com.miraiprjkt.letmecook.fragment; // Path disesuaikan
+package com.miraiprjkt.letmecook.fragment;
 
 import android.content.Context;
 import android.content.Intent;
@@ -9,15 +9,17 @@ import android.net.Uri;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout; // Import LinearLayout
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,13 +27,15 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.miraiprjkt.letmecook.R; // Pastikan R diimport dengan benar
+import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
 import com.miraiprjkt.letmecook.network.RetrofitClient;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Pattern; // Import Pattern
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -46,8 +50,8 @@ public class RecipeDetailFragment extends Fragment {
 
     private ImageView imageMealDetailThumb;
     private TextView textMealDetailName, textMealDetailCategory, textMealDetailArea;
-    private TextView textMealDetailIngredients, /*textMealDetailInstructions,*/ textMealDetailSource; // textMealDetailInstructions diganti LinearLayout
-    private LinearLayout layoutInstructionsContainer; // Untuk menampung langkah instruksi
+    private TextView textMealDetailIngredients, textMealDetailSource;
+    private LinearLayout layoutInstructionsContainer;
     private TextView labelSource;
     private ChipGroup chipGroupDetailTags;
     private MaterialButton buttonYoutube;
@@ -91,7 +95,7 @@ public class RecipeDetailFragment extends Fragment {
         textMealDetailCategory = view.findViewById(R.id.text_meal_detail_category);
         textMealDetailArea = view.findViewById(R.id.text_meal_detail_area);
         textMealDetailIngredients = view.findViewById(R.id.text_meal_detail_ingredients);
-        layoutInstructionsContainer = view.findViewById(R.id.layout_meal_detail_instructions_container); // Inisialisasi LinearLayout
+        layoutInstructionsContainer = view.findViewById(R.id.layout_meal_detail_instructions_container);
         buttonYoutube = view.findViewById(R.id.button_youtube);
         textMealDetailSource = view.findViewById(R.id.text_meal_detail_source);
         labelSource = view.findViewById(R.id.label_source);
@@ -237,66 +241,96 @@ public class RecipeDetailFragment extends Fragment {
         }
 
         // --- PERUBAHAN UNTUK INSTRUKSI ---
-        layoutInstructionsContainer.removeAllViews(); // Bersihkan instruksi lama jika ada
+        layoutInstructionsContainer.removeAllViews();
         String instructionsString = meal.getStrInstructions();
         if (instructionsString != null && !instructionsString.trim().isEmpty()) {
-            // Pecah instruksi berdasarkan baris baru. API biasanya menggunakan \r\n.
-            // Kita juga akan menangani jika hanya \n.
-            String[] steps = instructionsString.split("\\r?\\n");
-            int stepNumber = 1;
-            for (String stepText : steps) {
-                stepText = stepText.trim(); // Hapus spasi ekstra
-                // Abaikan baris kosong atau baris yang mungkin hanya nomor/simbol tanpa teks langkah yang jelas
-                if (stepText.isEmpty() || stepText.matches("^\\d+\\.\\s*") || stepText.matches("^-.*") ) {
-                    // Jika baris hanya nomor atau strip, mungkin tidak perlu card nomor terpisah jika sudah ada teksnya
-                    // Namun, untuk konsistensi, kita akan tampilkan jika tidak kosong.
-                    // Atau, Anda bisa filter lebih lanjut.
-                    // Untuk sekarang, kita tampilkan semua baris yang tidak kosong setelah di-trim.
-                    if(stepText.isEmpty()) continue;
+            String processedInstructions = instructionsString.trim();
+            // Hapus "DIRECTIONS:" jika ada di awal (case-insensitive)
+            if (processedInstructions.toUpperCase().startsWith("DIRECTIONS:")) {
+                int firstNewLine = processedInstructions.indexOf("\n");
+                if (firstNewLine != -1) {
+                    processedInstructions = processedInstructions.substring(firstNewLine + 1).trim();
+                } else {
+                    // Jika hanya "DIRECTIONS:" tanpa baris baru setelahnya
+                    processedInstructions = "";
+                }
+            }
+
+            String[] lines = processedInstructions.split("\\r?\\n"); // Split berdasarkan baris baru
+            int actualStepNumber = 1;
+            LayoutInflater inflater = LayoutInflater.from(getContext());
+
+            for (String line : lines) {
+                String trimmedLine = line.trim();
+                if (trimmedLine.isEmpty()) {
+                    continue; // Lewati baris kosong
+                }
+
+                // Pola untuk header seperti "STEP 1 - SAUCE" atau "PART 1: CHICKEN"
+                // Juga bisa menangkap judul singkat dalam huruf besar yang diakhiri titik dua
+                // atau yang tidak mengandung titik (sebagai heuristik sederhana)
+                Pattern headerPattern = Pattern.compile("^(STEP|PART)\\s*\\d+\\s*([-:]|\\s-\\s)?\\s*(.+)$", Pattern.CASE_INSENSITIVE);
+                boolean isSectionHeader = headerPattern.matcher(trimmedLine).matches();
+
+                // Heuristik tambahan untuk judul singkat dalam huruf besar (misal "SAUCE:")
+                if (!isSectionHeader && trimmedLine.equals(trimmedLine.toUpperCase()) &&
+                        trimmedLine.length() > 2 && trimmedLine.length() < 50 &&
+                        (trimmedLine.endsWith(":") || !trimmedLine.contains(".")) &&
+                        !trimmedLine.matches("^\\d+\\..*")) { // Pastikan bukan baris bernomor API
+                    isSectionHeader = true;
                 }
 
 
-                LayoutInflater inflater = LayoutInflater.from(getContext());
-                View stepView = inflater.inflate(R.layout.item_instruction_step, layoutInstructionsContainer, false);
+                if (isSectionHeader) {
+                    TextView sectionHeaderView = new TextView(getContext());
+                    sectionHeaderView.setText("➡ " + trimmedLine); // Tambahkan panah atau styling lain
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                    );
+                    // Ambil margin dari dimens.xml
+                    int marginTop = getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top);
+                    int marginBottom = getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_bottom);
+                    params.setMargins(0, marginTop, 0, marginBottom);
+                    sectionHeaderView.setLayoutParams(params);
 
-                TextView textStepNumber = stepView.findViewById(R.id.text_step_number);
-                TextView textStepInstruction = stepView.findViewById(R.id.text_step_instruction);
+                    // Atur tampilan teks untuk header
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        sectionHeaderView.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
+                    } else {
+                        androidx.core.widget.TextViewCompat.setTextAppearance(sectionHeaderView, com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
+                    }
+                    // Anda bisa menambahkan styling lain seperti textStyle bold
+                    // sectionHeaderView.setTypeface(null, Typeface.BOLD);
 
-                textStepNumber.setText(String.valueOf(stepNumber));
-                textStepInstruction.setText(stepText);
+                    layoutInstructionsContainer.addView(sectionHeaderView);
+                } else {
+                    // Ini adalah langkah instruksi aktual
+                    // Hapus penomoran dari API jika ada (misalnya "1. ", "2. ")
+                    String instructionText = trimmedLine.replaceFirst("^\\d+\\.\\s*", "").trim();
+                    if (instructionText.isEmpty()) continue; // Lewati jika setelah dihapus jadi kosong
 
-                layoutInstructionsContainer.addView(stepView);
-                stepNumber++;
+                    View stepView = inflater.inflate(R.layout.item_instruction_step, layoutInstructionsContainer, false);
+                    TextView textStepNumberView = stepView.findViewById(R.id.text_step_number);
+                    TextView textStepInstructionView = stepView.findViewById(R.id.text_step_instruction);
+
+                    textStepNumberView.setText(String.valueOf(actualStepNumber));
+                    textStepInstructionView.setText(instructionText);
+
+                    layoutInstructionsContainer.addView(stepView);
+                    actualStepNumber++;
+                }
             }
+
+            if (layoutInstructionsContainer.getChildCount() == 0) {
+                // Jika setelah semua pemrosesan tidak ada langkah yang valid
+                addNoInstructionsTextView();
+            }
+
         } else {
-            // Tambahkan TextView sederhana jika tidak ada instruksi
-            TextView noInstructionsView = new TextView(getContext());
-            noInstructionsView.setText("No instructions available.");
-
-            // --- PERBAIKAN ---
-            // Gunakan style dari Material 3 yang seharusnya tersedia
-            // jika library Material Components Anda versi 1.5.0 atau lebih baru (yang mendukung Material 3)
-            // Jika Anda menggunakan libs.material, pastikan versinya mendukung Material 3.
-            // Sebagai alternatif yang aman, Anda bisa menggunakan style bawaan Android atau AppCompat.
-            // Namun, karena tema Anda adalah Material3, mari coba style Material3.
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                // Cara yang lebih modern untuk API 23+
-                noInstructionsView.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
-            } else {
-                // Fallback untuk API di bawah 23 (menggunakan AppCompat)
-                androidx.core.widget.TextViewCompat.setTextAppearance(noInstructionsView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
-            }
-            // Jika com.google.android.material.R.style.TextAppearance_Material3_BodyMedium juga tidak ditemukan,
-            // berarti ada masalah dengan setup library Material 3 Anda atau versinya.
-            // Sebagai fallback absolut, Anda bisa menggunakan style dari AppCompat:
-            // androidx.core.widget.TextViewCompat.setTextAppearance(noInstructionsView, androidx.appcompat.R.style.TextAppearance_AppCompat_Body1);
-            // Atau mengatur properti secara manual:
-            // noInstructionsView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14); // contoh ukuran
-            // noInstructionsView.setTextColor(ContextCompat.getColor(getContext(), R.color.your_text_color)); // contoh warna
-
-            layoutInstructionsContainer.addView(noInstructionsView);
+            addNoInstructionsTextView();
         }
-
+        // --- AKHIR PERUBAHAN INSTRUKSI ---
 
         if (meal.getStrYoutube() != null && !meal.getStrYoutube().trim().isEmpty()) {
             buttonYoutube.setVisibility(View.VISIBLE);
@@ -320,5 +354,23 @@ public class RecipeDetailFragment extends Fragment {
             textMealDetailSource.setVisibility(View.GONE);
             labelSource.setVisibility(View.GONE);
         }
+    }
+
+    private void addNoInstructionsTextView() {
+        if (getContext() == null) return;
+        TextView noInstructionsView = new TextView(getContext());
+        noInstructionsView.setText("No instructions available.");
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            noInstructionsView.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        } else {
+            androidx.core.widget.TextViewCompat.setTextAppearance(noInstructionsView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        }
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top),0,0);
+        noInstructionsView.setLayoutParams(params);
+        layoutInstructionsContainer.addView(noInstructionsView);
     }
 }
