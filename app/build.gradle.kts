@@ -33,6 +33,9 @@ android {
 
 dependencies {
 
+    // Tambahkan baris ini untuk Lottie
+    implementation("com.airbnb.android:lottie:6.4.0")
+
     // Retrofit & Gson Converter (untuk networking)
     implementation("com.squareup.retrofit2:retrofit:2.9.0") // atau versi terbaru
     implementation("com.squareup.retrofit2:converter-gson:2.9.0") // atau versi terbaru yang kompatibel

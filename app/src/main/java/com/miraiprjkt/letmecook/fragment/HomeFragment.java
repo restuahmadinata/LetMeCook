@@ -19,11 +19,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -60,7 +63,7 @@ public class HomeFragment extends Fragment {
     private ApiService apiService;
     private ChipGroup chipGroupCategories;
     private SearchView searchViewRecipes;
-    private ShimmerFrameLayout shimmerViewContainer;
+    private LottieAnimationView lottieLoaderView;
     private LinearLayout layoutNoResults;
     private ImageView imageViewNoResultsIcon;
     private TextView textViewNoResultsMessage;
@@ -103,7 +106,7 @@ public class HomeFragment extends Fragment {
         recyclerViewRecipes = view.findViewById(R.id.recycler_view_recipes);
         chipGroupCategories = view.findViewById(R.id.chip_group_categories);
         searchViewRecipes = view.findViewById(R.id.search_view_recipes);
-        shimmerViewContainer = view.findViewById(R.id.shimmer_view_container);
+        lottieLoaderView = view.findViewById(R.id.lottie_loader_view);
         layoutNoResults = view.findViewById(R.id.layout_no_results);
         imageViewNoResultsIcon = view.findViewById(R.id.image_no_results_icon);
         textViewNoResultsMessage = view.findViewById(R.id.text_view_no_results_message);
@@ -131,19 +134,15 @@ public class HomeFragment extends Fragment {
 
     private void loadInitialData() {
         chipGroupCategories.setVisibility(View.VISIBLE);
-        // ***** MODIFIKASI: Selalu populate dengan default chips *****
         populateChipGroupWithDefaults();
 
         if (isNetworkAvailable()) {
             showLoading(true);
-            loadCategoriesFromApi(); // Coba muat kategori aktual dari API
+            loadCategoriesFromApi();
         } else {
             showLoading(false);
             showNoResults(true, "network");
             lastFailedAction = "initial_load";
-            // "Discover" chip (dan default lainnya) sudah ada.
-            // Jika mealList kosong, loadDiscoverRecipes() yang dipicu dari populateChipGroupWithDefaults
-            // akan langsung gagal karena cek jaringan di dalamnya.
         }
     }
 
@@ -177,19 +176,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void showLoading(boolean isLoading) {
+        if (lottieLoaderView == null) return;
         if (isLoading) {
-            shimmerViewContainer.startShimmer();
-            shimmerViewContainer.setVisibility(View.VISIBLE);
+            lottieLoaderView.setVisibility(View.VISIBLE);
             recyclerViewRecipes.setVisibility(View.GONE);
             layoutNoResults.setVisibility(View.GONE);
         } else {
-            shimmerViewContainer.stopShimmer();
-            shimmerViewContainer.setVisibility(View.GONE);
+            lottieLoaderView.setVisibility(View.GONE);
         }
     }
 
     private void showNoResults(boolean show, String messageContext) {
-        // ... (method ini tetap sama seperti sebelumnya)
         if (show) {
             recyclerViewRecipes.setVisibility(View.GONE);
             layoutNoResults.setVisibility(View.VISIBLE);
@@ -221,32 +218,27 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // ***** MODIFIKASI: Nama method diubah dan fungsinya diperjelas *****
     private void populateChipGroupWithDefaults() {
         if (getContext() == null) return;
         chipGroupCategories.removeAllViews();
         chipGroupCategories.setSingleSelection(true);
 
-        // 1. Tambahkan Chip "Discover"
-        Chip discoverChip = createCategoryChip("Discover", true); // true untuk isDiscover
+        Chip discoverChip = createCategoryChip("Discover", true);
         chipGroupCategories.addView(discoverChip);
 
-        // 2. Tambahkan Kategori Default dari list
         for (String categoryName : defaultCategoryNames) {
             chipGroupCategories.addView(createCategoryChip(categoryName, false));
         }
 
-        // 3. Set "Discover" sebagai default terpilih dan muat datanya
         boolean discoverChecked = false;
         if (chipGroupCategories.getChildCount() > 0) {
-            Chip firstChip = (Chip) chipGroupCategories.getChildAt(0); // "Discover" Chip
+            Chip firstChip = (Chip) chipGroupCategories.getChildAt(0);
             if (firstChip != null && "Discover".equals(firstChip.getText().toString())) {
                 firstChip.setChecked(true);
-                currentSelectedCategoryChipText = "Discover"; // Pastikan state konsisten
+                currentSelectedCategoryChipText = "Discover";
                 discoverChecked = true;
             }
         }
-        // Jika Discover terpilih (atau default) dan belum ada data resep, muat resep discover
         if (discoverChecked && (mealList == null || mealList.isEmpty())) {
             if (isAdded()) {
                 loadDiscoverRecipes();
@@ -254,7 +246,6 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // Helper method untuk membuat Chip
     private Chip createCategoryChip(String categoryName, boolean isDiscoverChip) {
         Chip chip = new Chip(getContext());
         chip.setText(categoryName);
@@ -284,12 +275,9 @@ public class HomeFragment extends Fragment {
             public void onResponse(@NonNull Call<CategoryList> call, @NonNull Response<CategoryList> response) {
                 if (!isAdded()) return;
                 if (response.isSuccessful() && response.body() != null && response.body().getCategories() != null && !response.body().getCategories().isEmpty()) {
-                    // Berhasil memuat dari API, setup ChipGroup dengan data API
                     setupChipGroupWithApiData(response.body().getCategories());
                 } else {
                     Log.e(TAG, "Failed to load categories from API or categories are empty: " + response.code());
-                    // Kategori API gagal dimuat, chip default sudah ditampilkan.
-                    // Jika "Discover" masih aktif dan belum ada data resep, coba muat.
                     if ("Discover".equals(currentSelectedCategoryChipText) && (mealList == null || mealList.isEmpty())) {
                         if (isNetworkAvailable()) {
                             loadDiscoverRecipes();
@@ -310,7 +298,6 @@ public class HomeFragment extends Fragment {
             public void onFailure(@NonNull Call<CategoryList> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 Log.e(TAG, "Error loading categories from API: " + t.getMessage());
-                // Kategori API gagal dimuat, chip default sudah ditampilkan.
                 if ("Discover".equals(currentSelectedCategoryChipText) && (mealList == null || mealList.isEmpty())) {
                     if (isNetworkAvailable()) {
                         loadDiscoverRecipes();
@@ -328,21 +315,17 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    // ***** MODIFIKASI: Nama method diubah dan fungsinya diperjelas *****
     private void setupChipGroupWithApiData(List<Category> apiCategories) {
         if (getContext() == null) return;
-        chipGroupCategories.removeAllViews(); // Hapus chip default yang mungkin ada
+        chipGroupCategories.removeAllViews();
         chipGroupCategories.setSingleSelection(true);
 
-        // 1. Selalu tambahkan Chip "Discover" di awal
         chipGroupCategories.addView(createCategoryChip("Discover", true));
 
-        // 2. Tambahkan Kategori dari API
         for (Category category : apiCategories) {
             chipGroupCategories.addView(createCategoryChip(category.getStrCategory(), false));
         }
 
-        // 3. Set chip yang sesuai sebagai checked (berdasarkan currentSelectedCategoryChipText atau default ke Discover)
         boolean chipWasSet = false;
         Chip chipToSelect = null;
 
@@ -358,29 +341,39 @@ public class HomeFragment extends Fragment {
         }
 
         if (!chipWasSet && chipGroupCategories.getChildCount() > 0) {
-            chipToSelect = (Chip) chipGroupCategories.getChildAt(0); // Default ke Discover jika tidak ada yang cocok
-            currentSelectedCategoryChipText = "Discover"; // Update state
+            chipToSelect = (Chip) chipGroupCategories.getChildAt(0);
+            currentSelectedCategoryChipText = "Discover";
         }
 
         if (chipToSelect != null) {
             chipToSelect.setChecked(true);
-            // Panggil method load yang sesuai secara manual
             if ("Discover".equals(currentSelectedCategoryChipText)) {
                 if (mealList == null || mealList.isEmpty()) loadDiscoverRecipes();
             } else {
-                // Hanya muat jika kategori berubah atau mealList kosong
                 if (mealList == null || mealList.isEmpty() || !lastQueryOrCategory.equals(currentSelectedCategoryChipText)) {
                     loadRecipesByCategory(currentSelectedCategoryChipText);
                 }
             }
         } else if (chipGroupCategories.getChildCount() == 0) {
-            // Jika API kategori kosong dan terjadi error sehingga chip tidak ada, fallback
             populateChipGroupWithDefaults();
         }
     }
 
-    // ... (loadDiscoverRecipes, checkDiscoverFetchCompletion, loadRecipesByCategory, searchRecipesByName, fetchMeals tetap sama)
-    // Pastikan semua method load ini memanggil isNetworkAvailable() di awal.
+    private void runLayoutAnimation() {
+        if (recyclerViewRecipes == null || !isAdded()) {
+            return;
+        }
+        final Context context = recyclerViewRecipes.getContext();
+        final LayoutAnimationController controller =
+                AnimationUtils.loadLayoutAnimation(context, R.anim.layout_animation_fall_down);
+
+        recyclerViewRecipes.setLayoutAnimation(controller);
+        if (recyclerViewRecipes.getAdapter() != null) {
+            recyclerViewRecipes.getAdapter().notifyDataSetChanged();
+        }
+        recyclerViewRecipes.scheduleLayoutAnimation();
+    }
+
     private void loadDiscoverRecipes() {
         if (!isNetworkAvailable()) {
             showLoading(false);
@@ -388,7 +381,6 @@ public class HomeFragment extends Fragment {
             lastFailedAction = "discover";
             return;
         }
-        // ... (sisa implementasi loadDiscoverRecipes)
         showLoading(true);
         lastFailedAction = "discover";
         lastQueryOrCategory = "";
@@ -429,6 +421,7 @@ public class HomeFragment extends Fragment {
                 mealList.addAll(meals);
                 recipeAdapter.updateData(mealList);
                 showNoResults(false, "");
+                runLayoutAnimation();
             } else {
                 mealList.clear();
                 recipeAdapter.updateData(mealList);
@@ -484,6 +477,7 @@ public class HomeFragment extends Fragment {
                         mealList.addAll(newMeals);
                         recipeAdapter.updateData(mealList);
                         showNoResults(false, "");
+                        runLayoutAnimation();
                     } else {
                         mealList.clear();
                         recipeAdapter.updateData(mealList);
@@ -510,8 +504,6 @@ public class HomeFragment extends Fragment {
         });
     }
 
-
-    // setupSearchView dan performSearch tetap sama seperti yang Anda berikan
     private void setupSearchView() {
         if (searchViewRecipes == null) {
             Log.e(TAG, "SearchView is null in setupSearchView");
@@ -566,7 +558,6 @@ public class HomeFragment extends Fragment {
                     Chip chip = (Chip) chipGroupCategories.getChildAt(i);
                     if (chip.getText().toString().equals(currentSelectedCategoryChipText)) {
                         chip.setChecked(true);
-                        // Panggil manual karena setChecked tidak memicu onClick
                         if ("Discover".equals(currentSelectedCategoryChipText)) loadDiscoverRecipes();
                         else loadRecipesByCategory(currentSelectedCategoryChipText);
                         restored = true;
@@ -588,20 +579,13 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // onResume, onPause, onDestroyView tetap sama
     @Override
     public void onResume() {
         super.onResume();
-        if (shimmerViewContainer != null && shimmerViewContainer.getVisibility() == View.VISIBLE && !shimmerViewContainer.isShimmerStarted()) {
-            shimmerViewContainer.startShimmer();
-        }
     }
 
     @Override
     public void onPause() {
-        if (shimmerViewContainer != null && shimmerViewContainer.isShimmerStarted()) {
-            shimmerViewContainer.stopShimmer();
-        }
         super.onPause();
     }
 
