@@ -66,8 +66,8 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
             textRecipeName.setText(meal.getStrMeal());
             Glide.with(itemView.getContext())
                     .load(meal.getStrMealThumb())
-                    .placeholder(R.drawable.ic_launcher_background)
-                    .error(R.drawable.ic_launcher_foreground)
+                    .placeholder(R.drawable.placeholder_food)
+                    .error(R.drawable.placeholder_food)
                     .into(imageRecipe);
 
             itemView.setOnClickListener(v -> {

@@ -207,8 +207,8 @@ public class RecipeDetailFragment extends Fragment {
 
         Glide.with(getContext())
                 .load(meal.getStrMealThumb())
-                .placeholder(R.drawable.ic_launcher_background)
-                .error(R.drawable.ic_launcher_foreground)
+                .placeholder(R.drawable.placeholder_food)
+                .error(R.drawable.placeholder_food)
                 .into(imageMealDetailThumb);
 
         textMealDetailName.setText(meal.getStrMeal());
