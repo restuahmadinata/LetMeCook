@@ -1,20 +1,10 @@
-// app/src/main/java/com/miraiprjkt/letmecook/fragment/HomeFragment.java
 package com.miraiprjkt.letmecook.fragment;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.SearchView;
-
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,8 +16,19 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SearchView;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.airbnb.lottie.LottieAnimationView;
-import com.facebook.shimmer.ShimmerFrameLayout;
+import com.airbnb.lottie.LottieProperty;
+import com.airbnb.lottie.model.KeyPath;
+import com.airbnb.lottie.value.LottieValueCallback;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -70,29 +71,28 @@ public class HomeFragment extends Fragment {
     private MaterialButton buttonRetry;
 
     private Timer searchTimer;
-    private String currentSelectedCategoryChipText = "Discover"; // Default
+    private String currentSelectedCategoryChipText = "Discover";
     private Random randomGenerator = new Random();
 
     private String lastFailedAction = "";
     private String lastQueryOrCategory = "";
+    private boolean isLoading = false; // Penanda status loading
 
-    // Daftar kategori default yang akan selalu ditampilkan
     private final List<String> defaultCategoryNames = Arrays.asList(
-            "Beef", "Chicken", "Dessert", "Lamb", "Miscellaneous", "Pasta" , "Pork", "Seafood", "Side", "Starter", "Vegan", "Vegetarian", "Breakfast", "Goat"
+            "Beef", "Chicken", "Dessert", "Lamb", "Miscellaneous", "Pasta", "Pork", "Seafood", "Side", "Starter", "Vegan", "Vegetarian", "Breakfast", "Goat"
     );
 
-    private String[] funnyNoResultsMessages = {
+    private final String[] funnyNoResultsMessages = {
             "Hmm, resepnya lagi ngumpet nih! Coba kata kunci lain?",
             "Dapur kita lagi kosong melompong untuk pencarian ini. Yuk, cari yang lain!",
             "Chef Google bilang: 'Resep tidak ditemukan, tapi jangan menyerah!'"
     };
 
-    private String[] funnyNetworkErrorMessages = {
+    private final String[] funnyNetworkErrorMessages = {
             "Waduh, sinyalnya lagi jalan-jalan! Coba 'Ulangi' nanti.",
             "Internetnya lagi masak rendang, lama nih. Klik 'Ulangi' aja!",
             "Server resepnya lagi tidur siang. Bangunin pakai tombol 'Ulangi' yuk!"
     };
-
 
     public HomeFragment() {
         // Required empty public constructor
@@ -112,6 +112,8 @@ public class HomeFragment extends Fragment {
         textViewNoResultsMessage = view.findViewById(R.id.text_view_no_results_message);
         buttonRetry = view.findViewById(R.id.button_retry);
 
+        setupLottieTheme();
+
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
         setupRecyclerView();
@@ -122,14 +124,25 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
+    private void setupLottieTheme() {
+        if (getContext() == null || lottieLoaderView == null) {
+            return;
+        }
+
+        int nightModeFlags = getContext().getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            KeyPath keyPath = new KeyPath("**", "Stroke 1", "Color");
+            int colorForDarkMode = ContextCompat.getColor(getContext(), R.color.md_theme_onSurface);
+            LottieValueCallback<Integer> colorCallback = new LottieValueCallback<>(colorForDarkMode);
+            lottieLoaderView.addValueCallback(keyPath, LottieProperty.STROKE_COLOR, colorCallback);
+        }
+    }
+
     private boolean isNetworkAvailable() {
         if (getContext() == null) return false;
         ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager != null) {
-            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-        }
-        return false;
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     private void loadInitialData() {
@@ -137,7 +150,6 @@ public class HomeFragment extends Fragment {
         populateChipGroupWithDefaults();
 
         if (isNetworkAvailable()) {
-            showLoading(true);
             loadCategoriesFromApi();
         } else {
             showLoading(false);
@@ -150,7 +162,6 @@ public class HomeFragment extends Fragment {
         mealList = new ArrayList<>();
         recipeAdapter = new RecipeAdapter(getContext(), mealList, meal -> {
             if (!isAdded() || getContext() == null) return;
-            Toast.makeText(getContext(), "Clicked: " + meal.getStrMeal(), Toast.LENGTH_SHORT).show();
             Bundle bundle = new Bundle();
             bundle.putString(RecipeDetailFragment.ARG_MEAL_ID, meal.getIdMeal());
             bundle.putString("mealName", meal.getStrMeal());
@@ -175,9 +186,9 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void showLoading(boolean isLoading) {
+    private void showLoading(boolean shouldLoad) {
         if (lottieLoaderView == null) return;
-        if (isLoading) {
+        if (shouldLoad) {
             lottieLoaderView.setVisibility(View.VISIBLE);
             recyclerViewRecipes.setVisibility(View.GONE);
             layoutNoResults.setVisibility(View.GONE);
@@ -191,25 +202,25 @@ public class HomeFragment extends Fragment {
             recyclerViewRecipes.setVisibility(View.GONE);
             layoutNoResults.setVisibility(View.VISIBLE);
             String message;
-            int iconResId = R.drawable.ic_search_off;
+            int iconResId;
 
             if ("network".equals(messageContext)) {
                 message = funnyNetworkErrorMessages[randomGenerator.nextInt(funnyNetworkErrorMessages.length)];
                 iconResId = R.drawable.ic_network_error;
                 buttonRetry.setVisibility(View.VISIBLE);
-            } else { // "no_results"
+            } else {
                 message = funnyNoResultsMessages[randomGenerator.nextInt(funnyNoResultsMessages.length)];
                 iconResId = R.drawable.ic_search_off;
                 buttonRetry.setVisibility(View.GONE);
             }
             textViewNoResultsMessage.setText(message);
-            if (getContext() != null && imageViewNoResultsIcon != null) {
+            if (getContext() != null) {
                 imageViewNoResultsIcon.setImageResource(iconResId);
             }
 
         } else {
             layoutNoResults.setVisibility(View.GONE);
-            if (mealList != null && !mealList.isEmpty()){
+            if (mealList != null && !mealList.isEmpty()) {
                 recyclerViewRecipes.setVisibility(View.VISIBLE);
             } else {
                 recyclerViewRecipes.setVisibility(View.GONE);
@@ -230,19 +241,12 @@ public class HomeFragment extends Fragment {
             chipGroupCategories.addView(createCategoryChip(categoryName, false));
         }
 
-        boolean discoverChecked = false;
         if (chipGroupCategories.getChildCount() > 0) {
             Chip firstChip = (Chip) chipGroupCategories.getChildAt(0);
-            if (firstChip != null && "Discover".equals(firstChip.getText().toString())) {
-                firstChip.setChecked(true);
-                currentSelectedCategoryChipText = "Discover";
-                discoverChecked = true;
-            }
-        }
-        if (discoverChecked && (mealList == null || mealList.isEmpty())) {
-            if (isAdded()) {
-                loadDiscoverRecipes();
-            }
+            firstChip.setChecked(true);
+            currentSelectedCategoryChipText = "Discover";
+            // Memuat resep discover dipicu dari sini saat awal
+            loadDiscoverRecipes();
         }
     }
 
@@ -252,7 +256,7 @@ public class HomeFragment extends Fragment {
         chip.setId(View.generateViewId());
         chip.setCheckable(true);
         chip.setOnClickListener(v -> {
-            if (((Chip)v).isChecked()) {
+            if (((Chip) v).isChecked()) {
                 currentSelectedCategoryChipText = categoryName;
                 if (searchViewRecipes != null) {
                     searchViewRecipes.setQuery("", false);
@@ -268,94 +272,38 @@ public class HomeFragment extends Fragment {
         return chip;
     }
 
-
     private void loadCategoriesFromApi() {
         apiService.getCategories().enqueue(new Callback<CategoryList>() {
             @Override
             public void onResponse(@NonNull Call<CategoryList> call, @NonNull Response<CategoryList> response) {
-                if (!isAdded()) return;
-                if (response.isSuccessful() && response.body() != null && response.body().getCategories() != null && !response.body().getCategories().isEmpty()) {
-                    setupChipGroupWithApiData(response.body().getCategories());
-                } else {
-                    Log.e(TAG, "Failed to load categories from API or categories are empty: " + response.code());
-                    if ("Discover".equals(currentSelectedCategoryChipText) && (mealList == null || mealList.isEmpty())) {
-                        if (isNetworkAvailable()) {
-                            loadDiscoverRecipes();
-                        } else {
-                            showLoading(false);
-                            showNoResults(true, "network");
-                        }
-                    } else if (!isNetworkAvailable()) {
-                        showLoading(false);
-                        showNoResults(true, "network");
-                    } else {
-                        if (mealList == null || mealList.isEmpty()) showLoading(false);
-                    }
-                }
+                if (!isAdded() || response.body() == null) return;
+                setupChipGroupWithApiData(response.body().getCategories());
             }
 
             @Override
             public void onFailure(@NonNull Call<CategoryList> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 Log.e(TAG, "Error loading categories from API: " + t.getMessage());
-                if ("Discover".equals(currentSelectedCategoryChipText) && (mealList == null || mealList.isEmpty())) {
-                    if (isNetworkAvailable()) {
-                        loadDiscoverRecipes();
-                    } else {
-                        showLoading(false);
-                        showNoResults(true, "network");
-                    }
-                } else if (!isNetworkAvailable()){
-                    showLoading(false);
-                    showNoResults(true, "network");
-                } else {
-                    if (mealList == null || mealList.isEmpty()) showLoading(false);
-                }
             }
         });
     }
 
     private void setupChipGroupWithApiData(List<Category> apiCategories) {
-        if (getContext() == null) return;
+        if (getContext() == null || apiCategories == null || apiCategories.isEmpty()) return;
         chipGroupCategories.removeAllViews();
         chipGroupCategories.setSingleSelection(true);
 
         chipGroupCategories.addView(createCategoryChip("Discover", true));
-
         for (Category category : apiCategories) {
             chipGroupCategories.addView(createCategoryChip(category.getStrCategory(), false));
         }
 
-        boolean chipWasSet = false;
-        Chip chipToSelect = null;
-
-        if (currentSelectedCategoryChipText != null && !currentSelectedCategoryChipText.isEmpty()){
-            for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
-                Chip chip = (Chip) chipGroupCategories.getChildAt(i);
-                if (chip.getText().toString().equals(currentSelectedCategoryChipText)) {
-                    chipToSelect = chip;
-                    chipWasSet = true;
-                    break;
-                }
+        for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
+            Chip chip = (Chip) chipGroupCategories.getChildAt(i);
+            if (chip.getText().toString().equals(currentSelectedCategoryChipText)) {
+                chip.setChecked(true);
+                break;
             }
-        }
-
-        if (!chipWasSet && chipGroupCategories.getChildCount() > 0) {
-            chipToSelect = (Chip) chipGroupCategories.getChildAt(0);
-            currentSelectedCategoryChipText = "Discover";
-        }
-
-        if (chipToSelect != null) {
-            chipToSelect.setChecked(true);
-            if ("Discover".equals(currentSelectedCategoryChipText)) {
-                if (mealList == null || mealList.isEmpty()) loadDiscoverRecipes();
-            } else {
-                if (mealList == null || mealList.isEmpty() || !lastQueryOrCategory.equals(currentSelectedCategoryChipText)) {
-                    loadRecipesByCategory(currentSelectedCategoryChipText);
-                }
-            }
-        } else if (chipGroupCategories.getChildCount() == 0) {
-            populateChipGroupWithDefaults();
         }
     }
 
@@ -375,12 +323,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadDiscoverRecipes() {
+        if (isLoading) return;
+        isLoading = true;
+
         if (!isNetworkAvailable()) {
             showLoading(false);
             showNoResults(true, "network");
             lastFailedAction = "discover";
+            isLoading = false;
             return;
         }
+
         showLoading(true);
         lastFailedAction = "discover";
         lastQueryOrCategory = "";
@@ -388,7 +341,8 @@ public class HomeFragment extends Fragment {
         final List<Meal> fetchedDiscoverMeals = new ArrayList<>();
         final int[] totalCallsMade = {0};
 
-        if (mealList != null) mealList.clear(); else mealList = new ArrayList<>();
+        if (mealList != null) mealList.clear();
+        else mealList = new ArrayList<>();
         if (recipeAdapter != null) recipeAdapter.notifyDataSetChanged();
 
         for (int i = 0; i < NUMBER_OF_DISCOVER_RECIPES; i++) {
@@ -396,12 +350,13 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
                     if (!isAdded()) return;
-                    totalCallsMade[0]++;
-                    if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null && !response.body().getMeals().isEmpty()) {
-                        fetchedDiscoverMeals.add(response.body().getMeals().get(0));
+                    if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null) {
+                        fetchedDiscoverMeals.addAll(response.body().getMeals());
                     }
+                    totalCallsMade[0]++;
                     checkDiscoverFetchCompletion(totalCallsMade[0], fetchedDiscoverMeals);
                 }
+
                 @Override
                 public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
                     if (!isAdded()) return;
@@ -415,6 +370,7 @@ public class HomeFragment extends Fragment {
 
     private void checkDiscoverFetchCompletion(int callsMade, List<Meal> meals) {
         if (callsMade == NUMBER_OF_DISCOVER_RECIPES) {
+            isLoading = false;
             showLoading(false);
             if (!meals.isEmpty()) {
                 mealList.clear();
@@ -431,43 +387,34 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadRecipesByCategory(String categoryName) {
-        if (!isNetworkAvailable()) {
-            showLoading(false);
-            showNoResults(true, "network");
-            lastFailedAction = "category";
-            lastQueryOrCategory = categoryName;
-            return;
-        }
         lastFailedAction = "category";
         lastQueryOrCategory = categoryName;
-        fetchMeals(apiService.filterByCategory(categoryName), "Failed to load recipes for category: " + categoryName);
+        fetchMeals(apiService.filterByCategory(categoryName));
     }
 
     private void searchRecipesByName(String query) {
-        if (!isNetworkAvailable() && !query.isEmpty()) {
-            showLoading(false);
-            showNoResults(true, "network");
-            lastFailedAction = "search";
-            lastQueryOrCategory = query;
-            return;
-        }
         if (query.isEmpty()) {
             performSearch("");
             return;
         }
         lastFailedAction = "search";
         lastQueryOrCategory = query;
-        fetchMeals(apiService.searchMeals(query), "Failed to search recipes for: " + query);
+        fetchMeals(apiService.searchMeals(query));
     }
 
-    private void fetchMeals(Call<MealList> call, String logErrorMessagePrefix) {
+    private void fetchMeals(Call<MealList> call) {
+        if (isLoading) return;
+        isLoading = true;
+
         showLoading(true);
-        if (mealList != null) mealList.clear(); else mealList = new ArrayList<>();
+        if (mealList != null) mealList.clear();
+        else mealList = new ArrayList<>();
         if (recipeAdapter != null) recipeAdapter.notifyDataSetChanged();
 
         call.enqueue(new Callback<MealList>() {
             @Override
             public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
+                isLoading = false;
                 if (!isAdded()) return;
                 showLoading(false);
                 if (response.isSuccessful() && response.body() != null) {
@@ -482,33 +429,28 @@ public class HomeFragment extends Fragment {
                         mealList.clear();
                         recipeAdapter.updateData(mealList);
                         showNoResults(true, "no_results");
-                        Log.d(TAG, logErrorMessagePrefix + ": No meals found or null response.");
                     }
                 } else {
                     mealList.clear();
                     recipeAdapter.updateData(mealList);
                     showNoResults(true, "network");
-                    Log.e(TAG, logErrorMessagePrefix + ": " + response.code() + " " + response.message());
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
+                isLoading = false;
                 if (!isAdded()) return;
                 showLoading(false);
                 mealList.clear();
                 recipeAdapter.updateData(mealList);
                 showNoResults(true, "network");
-                Log.e(TAG, logErrorMessagePrefix + " (Network Error): " + t.getMessage());
             }
         });
     }
 
     private void setupSearchView() {
-        if (searchViewRecipes == null) {
-            Log.e(TAG, "SearchView is null in setupSearchView");
-            return;
-        }
+        if (searchViewRecipes == null) return;
         searchViewRecipes.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -525,8 +467,8 @@ public class HomeFragment extends Fragment {
                 searchTimer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        if (getActivity() != null && isAdded()) {
-                            getActivity().runOnUiThread(() -> performSearch(newText));
+                        if (isAdded()) {
+                            requireActivity().runOnUiThread(() -> performSearch(newText));
                         }
                     }
                 }, SEARCH_DELAY);
@@ -535,58 +477,27 @@ public class HomeFragment extends Fragment {
         });
 
         ImageView closeButton = searchViewRecipes.findViewById(androidx.appcompat.R.id.search_close_btn);
-        if (closeButton != null) {
-            closeButton.setOnClickListener(v -> {
-                searchViewRecipes.setQuery("", false);
-                searchViewRecipes.clearFocus();
-                performSearch("");
-            });
-        }
+        closeButton.setOnClickListener(v -> {
+            searchViewRecipes.setQuery("", false);
+            searchViewRecipes.clearFocus();
+            performSearch("");
+        });
     }
 
     private void performSearch(String query) {
         if (query == null) return;
-
         if (!query.isEmpty()) {
             chipGroupCategories.clearCheck();
             currentSelectedCategoryChipText = "";
             searchRecipesByName(query);
         } else {
-            boolean restored = false;
-            if (currentSelectedCategoryChipText != null && !currentSelectedCategoryChipText.isEmpty()) {
-                for (int i = 0; i < chipGroupCategories.getChildCount(); i++) {
-                    Chip chip = (Chip) chipGroupCategories.getChildAt(i);
-                    if (chip.getText().toString().equals(currentSelectedCategoryChipText)) {
-                        chip.setChecked(true);
-                        if ("Discover".equals(currentSelectedCategoryChipText)) loadDiscoverRecipes();
-                        else loadRecipesByCategory(currentSelectedCategoryChipText);
-                        restored = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!restored && chipGroupCategories.getChildCount() > 0) {
-                Chip discoverChip = (Chip) chipGroupCategories.getChildAt(0);
-                if (discoverChip != null) {
-                    discoverChip.setChecked(true);
-                    currentSelectedCategoryChipText = "Discover";
-                    loadDiscoverRecipes();
-                }
-            } else if (chipGroupCategories.getChildCount() == 0) {
-                populateChipGroupWithDefaults();
+            if (chipGroupCategories.getCheckedChipId() == View.NO_ID && chipGroupCategories.getChildCount() > 0) {
+                Chip firstChip = (Chip) chipGroupCategories.getChildAt(0);
+                firstChip.setChecked(true);
+                currentSelectedCategoryChipText = firstChip.getText().toString();
+                loadDiscoverRecipes();
             }
         }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
     }
 
     @Override
