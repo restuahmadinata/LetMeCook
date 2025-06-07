@@ -1,5 +1,4 @@
-// app/src/main/java/com/miraiprjkt/letmecook/fragment/RecipeDetailFragment.java
-package com.miraiprjkt.letmecook.fragment;
+package com.miraiprjkt.letmecook;
 
 import android.content.Context;
 import android.content.Intent;
@@ -7,22 +6,22 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.core.widget.NestedScrollView;
-import androidx.fragment.app.Fragment;
-import android.text.TextUtils;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.widget.NestedScrollView;
+
 import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -32,21 +31,24 @@ import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
 import com.miraiprjkt.letmecook.network.RetrofitClient;
+
 import java.util.List;
 import java.util.Random;
-import java.util.regex.Pattern; // Import Pattern
+import java.util.regex.Pattern;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class RecipeDetailFragment extends Fragment {
+public class RecipeDetailActivity extends AppCompatActivity {
 
-    private static final String TAG = "RecipeDetailFragment";
-    public static final String ARG_MEAL_ID = "meal_id";
+    public static final String EXTRA_MEAL_ID = "extra_meal_id";
+    public static final String EXTRA_MEAL_NAME = "extra_meal_name";
+    private static final String TAG = "RecipeDetailActivity";
 
     private String mealId;
     private ApiService apiService;
+    private Random randomGenerator = new Random();
 
     private ImageView imageMealDetailThumb;
     private TextView textMealDetailName, textMealDetailCategory, textMealDetailArea;
@@ -57,54 +59,37 @@ public class RecipeDetailFragment extends Fragment {
     private MaterialButton buttonYoutube;
     private ProgressBar progressBarDetail;
     private NestedScrollView nestedScrollViewContent;
-
     private LinearLayout layoutDetailError;
     private ImageView imageDetailErrorIcon;
     private TextView textViewDetailErrorMessage;
     private MaterialButton buttonDetailRetry;
-    private Random randomGenerator = new Random();
 
-    private String[] funnyNetworkErrorMessages = {
+    private final String[] funnyNetworkErrorMessages = {
             "Duh, resepnya gak mau keluar tanpa internet! Coba 'Ulangi'.",
             "Sinyal ke dapur resep lagi putus, sambungin lagi yuk!",
             "Resep ini lagi malu-malu, butuh internet biar PD. Klik 'Ulangi'."
     };
 
-    public RecipeDetailFragment() {
-        // Required empty public constructor
-    }
-
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mealId = getArguments().getString(ARG_MEAL_ID);
+        setContentView(R.layout.activity_recipe_detail);
+
+        Toolbar toolbar = findViewById(R.id.toolbar_recipe_detail);
+        setSupportActionBar(toolbar);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
+
+        mealId = getIntent().getStringExtra(EXTRA_MEAL_ID);
+        String mealName = getIntent().getStringExtra(EXTRA_MEAL_NAME);
+        getSupportActionBar().setTitle(mealName != null ? mealName : "Recipe Detail");
+
         apiService = RetrofitClient.getClient().create(ApiService.class);
-    }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_recipe_detail, container, false);
-
-        nestedScrollViewContent = view.findViewById(R.id.scroll_view_recipe_detail_content);
-        imageMealDetailThumb = view.findViewById(R.id.image_meal_detail_thumb);
-        textMealDetailName = view.findViewById(R.id.text_meal_detail_name);
-        chipGroupDetailTags = view.findViewById(R.id.chip_group_detail_tags);
-        textMealDetailCategory = view.findViewById(R.id.text_meal_detail_category);
-        textMealDetailArea = view.findViewById(R.id.text_meal_detail_area);
-        textMealDetailIngredients = view.findViewById(R.id.text_meal_detail_ingredients);
-        layoutInstructionsContainer = view.findViewById(R.id.layout_meal_detail_instructions_container);
-        buttonYoutube = view.findViewById(R.id.button_youtube);
-        textMealDetailSource = view.findViewById(R.id.text_meal_detail_source);
-        labelSource = view.findViewById(R.id.label_source);
-        progressBarDetail = view.findViewById(R.id.progress_bar_detail);
-
-        layoutDetailError = view.findViewById(R.id.layout_detail_error);
-        imageDetailErrorIcon = view.findViewById(R.id.image_detail_error_icon);
-        textViewDetailErrorMessage = view.findViewById(R.id.text_view_detail_error_message);
-        buttonDetailRetry = view.findViewById(R.id.button_detail_retry);
+        initializeViews();
 
         buttonDetailRetry.setOnClickListener(v -> {
             if (mealId != null && !mealId.isEmpty()) {
@@ -117,32 +102,43 @@ public class RecipeDetailFragment extends Fragment {
         } else {
             showErrorState("Recipe ID not found.", false);
         }
-        return view;
+    }
+
+    private void initializeViews() {
+        nestedScrollViewContent = findViewById(R.id.scroll_view_recipe_detail_content);
+        imageMealDetailThumb = findViewById(R.id.image_meal_detail_thumb);
+        textMealDetailName = findViewById(R.id.text_meal_detail_name);
+        chipGroupDetailTags = findViewById(R.id.chip_group_detail_tags);
+        textMealDetailCategory = findViewById(R.id.text_meal_detail_category);
+        textMealDetailArea = findViewById(R.id.text_meal_detail_area);
+        textMealDetailIngredients = findViewById(R.id.text_meal_detail_ingredients);
+        layoutInstructionsContainer = findViewById(R.id.layout_meal_detail_instructions_container);
+        buttonYoutube = findViewById(R.id.button_youtube);
+        textMealDetailSource = findViewById(R.id.text_meal_detail_source);
+        labelSource = findViewById(R.id.label_source);
+        progressBarDetail = findViewById(R.id.progress_bar_detail);
+        layoutDetailError = findViewById(R.id.layout_detail_error);
+        imageDetailErrorIcon = findViewById(R.id.image_detail_error_icon);
+        textViewDetailErrorMessage = findViewById(R.id.text_view_detail_error_message);
+        buttonDetailRetry = findViewById(R.id.button_detail_retry);
     }
 
     private boolean isNetworkAvailable() {
-        if (getContext() == null) return false;
-        ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (connectivityManager != null) {
-            NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-            return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-        }
-        return false;
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 
     private void showLoadingState(boolean isLoading) {
+        progressBarDetail.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         if (isLoading) {
-            progressBarDetail.setVisibility(View.VISIBLE);
-            if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.GONE);
+            nestedScrollViewContent.setVisibility(View.GONE);
             layoutDetailError.setVisibility(View.GONE);
-        } else {
-            progressBarDetail.setVisibility(View.GONE);
         }
     }
 
     private void showErrorState(String customMessage, boolean isNetworkError) {
         showLoadingState(false);
-        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.GONE);
+        nestedScrollViewContent.setVisibility(View.GONE);
         layoutDetailError.setVisibility(View.VISIBLE);
 
         String message;
@@ -157,14 +153,12 @@ public class RecipeDetailFragment extends Fragment {
             buttonDetailRetry.setVisibility(View.GONE);
         }
         textViewDetailErrorMessage.setText(message);
-        if (getContext() != null && imageDetailErrorIcon != null) {
-            imageDetailErrorIcon.setImageResource(iconResId);
-        }
+        imageDetailErrorIcon.setImageResource(iconResId);
     }
 
     private void showContentState() {
         showLoadingState(false);
-        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.VISIBLE);
+        nestedScrollViewContent.setVisibility(View.VISIBLE);
         layoutDetailError.setVisibility(View.GONE);
     }
 
@@ -177,7 +171,6 @@ public class RecipeDetailFragment extends Fragment {
         apiService.getMealDetails(id).enqueue(new Callback<MealList>() {
             @Override
             public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
-                if (!isAdded()) return;
                 if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null && !response.body().getMeals().isEmpty()) {
                     Meal meal = response.body().getMeals().get(0);
                     displayRecipeDetails(meal);
@@ -190,7 +183,6 @@ public class RecipeDetailFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<MealList> call, @NonNull Throwable t) {
-                if (!isAdded()) return;
                 showErrorState("Network error. Please try again.", true);
                 Log.e(TAG, "Error loading details: " + t.getMessage());
             }
@@ -198,14 +190,12 @@ public class RecipeDetailFragment extends Fragment {
     }
 
     private void displayRecipeDetails(Meal meal) {
-        if (meal == null || getContext() == null) {
+        if (meal == null) {
             showErrorState("Recipe data is invalid.", false);
             return;
         }
-        layoutDetailError.setVisibility(View.GONE);
-        if (nestedScrollViewContent != null) nestedScrollViewContent.setVisibility(View.VISIBLE);
 
-        Glide.with(getContext())
+        Glide.with(this)
                 .load(meal.getStrMealThumb())
                 .placeholder(R.drawable.placeholder_food)
                 .error(R.drawable.placeholder_food)
@@ -220,7 +210,7 @@ public class RecipeDetailFragment extends Fragment {
             String[] tags = meal.getStrTags().split(",");
             for (String tag : tags) {
                 if (tag.trim().isEmpty()) continue;
-                Chip chip = new Chip(getContext());
+                Chip chip = new Chip(this);
                 chip.setText(tag.trim());
                 chipGroupDetailTags.addView(chip);
             }
@@ -240,107 +230,57 @@ public class RecipeDetailFragment extends Fragment {
             textMealDetailIngredients.setText("No ingredients listed.");
         }
 
-        // --- PERUBAHAN UNTUK INSTRUKSI ---
         layoutInstructionsContainer.removeAllViews();
         String instructionsString = meal.getStrInstructions();
         if (instructionsString != null && !instructionsString.trim().isEmpty()) {
             String processedInstructions = instructionsString.trim();
-            // Hapus "DIRECTIONS:" jika ada di awal (case-insensitive)
             if (processedInstructions.toUpperCase().startsWith("DIRECTIONS:")) {
                 int firstNewLine = processedInstructions.indexOf("\n");
-                if (firstNewLine != -1) {
-                    processedInstructions = processedInstructions.substring(firstNewLine + 1).trim();
-                } else {
-                    // Jika hanya "DIRECTIONS:" tanpa baris baru setelahnya
-                    processedInstructions = "";
-                }
+                processedInstructions = (firstNewLine != -1) ? processedInstructions.substring(firstNewLine + 1).trim() : "";
             }
 
-            String[] lines = processedInstructions.split("\\r?\\n"); // Split berdasarkan baris baru
+            String[] lines = processedInstructions.split("\\r?\\n");
             int actualStepNumber = 1;
-            LayoutInflater inflater = LayoutInflater.from(getContext());
+            LayoutInflater inflater = LayoutInflater.from(this);
 
             for (String line : lines) {
                 String trimmedLine = line.trim();
-                if (trimmedLine.isEmpty()) {
-                    continue; // Lewati baris kosong
-                }
+                if (trimmedLine.isEmpty()) continue;
 
-                // Pola untuk header seperti "STEP 1 - SAUCE" atau "PART 1: CHICKEN"
-                // Juga bisa menangkap judul singkat dalam huruf besar yang diakhiri titik dua
-                // atau yang tidak mengandung titik (sebagai heuristik sederhana)
                 Pattern headerPattern = Pattern.compile("^(STEP|PART)\\s*\\d+\\s*([-:]|\\s-\\s)?\\s*(.+)$", Pattern.CASE_INSENSITIVE);
-                boolean isSectionHeader = headerPattern.matcher(trimmedLine).matches();
-
-                // Heuristik tambahan untuk judul singkat dalam huruf besar (misal "SAUCE:")
-                if (!isSectionHeader && trimmedLine.equals(trimmedLine.toUpperCase()) &&
-                        trimmedLine.length() > 2 && trimmedLine.length() < 50 &&
-                        (trimmedLine.endsWith(":") || !trimmedLine.contains(".")) &&
-                        !trimmedLine.matches("^\\d+\\..*")) { // Pastikan bukan baris bernomor API
-                    isSectionHeader = true;
-                }
-
+                boolean isSectionHeader = headerPattern.matcher(trimmedLine).matches() ||
+                        (trimmedLine.equals(trimmedLine.toUpperCase()) && trimmedLine.length() > 2 && trimmedLine.length() < 50 && (trimmedLine.endsWith(":") || !trimmedLine.contains(".")) && !trimmedLine.matches("^\\d+\\..*"));
 
                 if (isSectionHeader) {
-                    TextView sectionHeaderView = new TextView(getContext());
-                    sectionHeaderView.setText("➡ " + trimmedLine); // Tambahkan panah atau styling lain
-                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    // Ambil margin dari dimens.xml
+                    TextView sectionHeaderView = new TextView(this);
+                    sectionHeaderView.setText("➡ " + trimmedLine);
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                     int marginTop = getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top);
                     int marginBottom = getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_bottom);
                     params.setMargins(0, marginTop, 0, marginBottom);
                     sectionHeaderView.setLayoutParams(params);
-
-                    // Atur tampilan teks untuk header
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        sectionHeaderView.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
-                    } else {
-                        androidx.core.widget.TextViewCompat.setTextAppearance(sectionHeaderView, com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
-                    }
-                    // Anda bisa menambahkan styling lain seperti textStyle bold
-                    // sectionHeaderView.setTypeface(null, Typeface.BOLD);
-
+                    sectionHeaderView.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
                     layoutInstructionsContainer.addView(sectionHeaderView);
                 } else {
-                    // Ini adalah langkah instruksi aktual
-                    // Hapus penomoran dari API jika ada (misalnya "1. ", "2. ")
                     String instructionText = trimmedLine.replaceFirst("^\\d+\\.\\s*", "").trim();
-                    if (instructionText.isEmpty()) continue; // Lewati jika setelah dihapus jadi kosong
-
+                    if (instructionText.isEmpty()) continue;
                     View stepView = inflater.inflate(R.layout.item_instruction_step, layoutInstructionsContainer, false);
-                    TextView textStepNumberView = stepView.findViewById(R.id.text_step_number);
-                    TextView textStepInstructionView = stepView.findViewById(R.id.text_step_instruction);
-
-                    textStepNumberView.setText(String.valueOf(actualStepNumber));
-                    textStepInstructionView.setText(instructionText);
-
+                    ((TextView) stepView.findViewById(R.id.text_step_number)).setText(String.valueOf(actualStepNumber++));
+                    ((TextView) stepView.findViewById(R.id.text_step_instruction)).setText(instructionText);
                     layoutInstructionsContainer.addView(stepView);
-                    actualStepNumber++;
                 }
             }
 
-            if (layoutInstructionsContainer.getChildCount() == 0) {
-                // Jika setelah semua pemrosesan tidak ada langkah yang valid
-                addNoInstructionsTextView();
-            }
-
+            if (layoutInstructionsContainer.getChildCount() == 0) addNoInstructionsTextView();
         } else {
             addNoInstructionsTextView();
         }
-        // --- AKHIR PERUBAHAN INSTRUKSI ---
 
         if (meal.getStrYoutube() != null && !meal.getStrYoutube().trim().isEmpty()) {
             buttonYoutube.setVisibility(View.VISIBLE);
             buttonYoutube.setOnClickListener(v -> {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(meal.getStrYoutube()));
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-                    Toast.makeText(getContext(), "Could not open YouTube link.", Toast.LENGTH_SHORT).show();
-                }
+                startActivity(intent);
             });
         } else {
             buttonYoutube.setVisibility(View.GONE);
@@ -357,20 +297,21 @@ public class RecipeDetailFragment extends Fragment {
     }
 
     private void addNoInstructionsTextView() {
-        if (getContext() == null) return;
-        TextView noInstructionsView = new TextView(getContext());
+        TextView noInstructionsView = new TextView(this);
         noInstructionsView.setText("No instructions available.");
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            noInstructionsView.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
-        } else {
-            androidx.core.widget.TextViewCompat.setTextAppearance(noInstructionsView, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
-        }
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(0, getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top),0,0);
+        noInstructionsView.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top), 0, 0);
         noInstructionsView.setLayoutParams(params);
         layoutInstructionsContainer.addView(noInstructionsView);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

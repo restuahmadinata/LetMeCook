@@ -2,6 +2,7 @@
 package com.miraiprjkt.letmecook.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -71,9 +72,11 @@ public class RecipeAdapter extends RecyclerView.Adapter<RecipeAdapter.RecipeView
                     .into(imageRecipe);
 
             itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onItemClick(meal); // Panggil listener yang diteruskan dari Fragment
-                }
+                // Hapus NavController, ganti dengan Intent
+                Intent intent = new Intent(itemView.getContext(), com.miraiprjkt.letmecook.RecipeDetailActivity.class);
+                intent.putExtra(com.miraiprjkt.letmecook.RecipeDetailActivity.EXTRA_MEAL_ID, meal.getIdMeal());
+                intent.putExtra(com.miraiprjkt.letmecook.RecipeDetailActivity.EXTRA_MEAL_NAME, meal.getStrMeal());
+                itemView.getContext().startActivity(intent);
             });
         }
     }

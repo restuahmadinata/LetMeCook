@@ -28,7 +28,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         applyThemeOnStartup();
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -47,22 +46,22 @@ public class MainActivity extends AppCompatActivity {
                         .setPopUpTo(item.getItemId(), true)
                         .setLaunchSingleTop(true)
                         .build();
-
                 navController.navigate(item.getItemId(), null, navOptions);
                 return true;
             });
 
             navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-                if (arguments != null && arguments.containsKey("mealName") && destination.getId() == R.id.recipeDetailFragment) {
-                    customTitleTextView.setText(arguments.getString("mealName"));
-                } else if (destination.getLabel() != null) {
+                // ==================== AWAL PERUBAHAN ====================
+
+                // Hapus blok 'if' yang menyebabkan error, karena halaman detail sudah menjadi Activity
+                if (destination.getLabel() != null) {
                     customTitleTextView.setText(destination.getLabel());
                 } else {
                     customTitleTextView.setText(getString(R.string.app_name));
                 }
 
+                // Kode ini sekarang hanya mengontrol tombol kembali untuk fragment
                 ConstraintLayout.LayoutParams titleParams = (ConstraintLayout.LayoutParams) customTitleTextView.getLayoutParams();
-
                 if (destination.getId() == R.id.navigation_home ||
                         destination.getId() == R.id.navigation_favorites ||
                         destination.getId() == R.id.navigation_settings) {
@@ -71,12 +70,15 @@ public class MainActivity extends AppCompatActivity {
                     titleParams.goneStartMargin = getResources().getDimensionPixelSize(R.dimen.custom_title_margin_start_no_back);
                     titleParams.startToEnd = ConstraintLayout.LayoutParams.UNSET;
                 } else {
+                    // Logika ini mungkin tidak akan pernah terpanggil lagi, tapi aman untuk dibiarkan
                     customBackButton.setVisibility(View.VISIBLE);
                     titleParams.startToEnd = R.id.button_back_custom;
                     titleParams.resolveLayoutDirection(mainContainer.getLayoutDirection());
                     titleParams.startToStart = ConstraintLayout.LayoutParams.UNSET;
                 }
                 customTitleTextView.setLayoutParams(titleParams);
+
+                // ==================== AKHIR PERUBAHAN ====================
             });
 
             customBackButton.setOnClickListener(v -> navController.navigateUp());

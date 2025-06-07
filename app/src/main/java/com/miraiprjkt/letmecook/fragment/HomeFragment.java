@@ -1,6 +1,7 @@
 package com.miraiprjkt.letmecook.fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -33,6 +34,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.miraiprjkt.letmecook.R;
+import com.miraiprjkt.letmecook.RecipeDetailActivity;
 import com.miraiprjkt.letmecook.adapter.RecipeAdapter;
 import com.miraiprjkt.letmecook.model.Category;
 import com.miraiprjkt.letmecook.model.CategoryList;
@@ -162,11 +164,16 @@ public class HomeFragment extends Fragment {
         mealList = new ArrayList<>();
         recipeAdapter = new RecipeAdapter(getContext(), mealList, meal -> {
             if (!isAdded() || getContext() == null) return;
-            Bundle bundle = new Bundle();
-            bundle.putString(RecipeDetailFragment.ARG_MEAL_ID, meal.getIdMeal());
-            bundle.putString("mealName", meal.getStrMeal());
-            NavHostFragment.findNavController(HomeFragment.this)
-                    .navigate(R.id.action_homeFragment_to_recipeDetailFragment, bundle);
+
+            // ==================== AWAL PERUBAHAN ====================
+
+            // Ganti navigasi fragment dengan Intent untuk membuka Activity
+            Intent intent = new Intent(getContext(), RecipeDetailActivity.class);
+            intent.putExtra(RecipeDetailActivity.EXTRA_MEAL_ID, meal.getIdMeal());
+            intent.putExtra(RecipeDetailActivity.EXTRA_MEAL_NAME, meal.getStrMeal());
+            startActivity(intent);
+
+            // ==================== AKHIR PERUBAHAN ====================
         });
         recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewRecipes.setAdapter(recipeAdapter);
