@@ -9,10 +9,55 @@
         android:id="@+id/recycler_view_favorites"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/item_recipe" />
+
+    <LinearLayout
+        android:id="@+id/layout_favorites_empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible">
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:src="@drawable/ic_empty_plate"
+            android:contentDescription="Empty Favorites"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your cookbook is looking a bit lonely!"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:layout_marginTop="16dp"
+            android:gravity="center"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Let's go on a recipe hunt and find something delicious to save."
+            android:textAppearance="?attr/textAppearanceBody1"
+            android:layout_marginTop="8dp"
+            android:gravity="center"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_back_to_home"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Find Recipes"
+            android:layout_marginTop="24dp"/>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
