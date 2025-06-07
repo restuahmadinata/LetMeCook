@@ -1,11 +1,19 @@
 package com.miraiprjkt.letmecook.fragment;
 
+import android.content.Context;
+import android.content.res.Configuration;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.annotation.AttrRes;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,6 +37,8 @@ public class FavoritesFragment extends Fragment {
 
     private LinearLayout emptyFavoritesLayout;
     private MaterialButton backToHomeButton;
+    private ImageView emptyPlateIcon;
+
 
     public FavoritesFragment() {
         // Required empty public constructor
@@ -43,31 +53,27 @@ public class FavoritesFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view_favorites);
         emptyFavoritesLayout = view.findViewById(R.id.layout_favorites_empty);
         backToHomeButton = view.findViewById(R.id.button_back_to_home);
+        emptyPlateIcon = view.findViewById(R.id.image_view_empty_plate);
+
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         dbHelper = new DatabaseHelper(getContext());
-
-        // Gunakan ArrayList agar bisa diubah-ubah
         favoriteMeals = new ArrayList<>();
-
         adapter = new FavoriteRecipeAdapter(getContext(), favoriteMeals);
         recyclerView.setAdapter(adapter);
 
-        // ==================== PERUBAHAN DI SINI ====================
         backToHomeButton.setOnClickListener(v -> {
-            // Dapatkan referensi ke MainActivity
             if (getActivity() != null) {
-                // Cari BottomNavigationView di MainActivity
                 BottomNavigationView bottomNavView = getActivity().findViewById(R.id.nav_view);
                 if (bottomNavView != null) {
-                    // Secara programmatic, pilih item menu Home
-                    // Ini akan memicu listener di MainActivity untuk melakukan navigasi
                     bottomNavView.setSelectedItemId(R.id.navigation_home);
                 }
             }
         });
-        // ==================== AKHIR PERUBAHAN ====================
+
+        // Atur warna ikon berdasarkan tema saat ini
+        setupEmptyStateIconTint();
 
         return view;
     }
@@ -75,36 +81,56 @@ public class FavoritesFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Muat ulang data setiap kali fragment ini ditampilkan
         loadFavorites();
     }
 
     private void loadFavorites() {
-        // Hapus data lama dan isi dengan data terbaru dari database
         favoriteMeals.clear();
         List<Meal> newFavorites = dbHelper.getAllFavorites();
         if (newFavorites != null) {
             favoriteMeals.addAll(newFavorites);
         }
 
-        // Beri tahu adapter bahwa data telah berubah
         if(adapter != null) {
             adapter.notifyDataSetChanged();
         }
-
-        // Periksa apakah daftar kosong atau tidak untuk menampilkan UI yang sesuai
         checkEmptyState();
     }
 
     private void checkEmptyState() {
         if (favoriteMeals != null && favoriteMeals.isEmpty()) {
-            // Jika kosong, tampilkan pesan dan tombol
             recyclerView.setVisibility(View.GONE);
             emptyFavoritesLayout.setVisibility(View.VISIBLE);
         } else {
-            // Jika ada isinya, tampilkan daftar resep
             recyclerView.setVisibility(View.VISIBLE);
             emptyFavoritesLayout.setVisibility(View.GONE);
         }
+    }
+
+    private void setupEmptyStateIconTint() {
+        if (getContext() == null || emptyPlateIcon == null) return;
+
+        // Cek apakah mode gelap sedang aktif
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isNightMode = nightModeFlags == Configuration.UI_MODE_NIGHT_YES;
+
+        // ==================== PERUBAHAN DI SINI ====================
+        // Menggunakan referensi atribut langsung dari library Material untuk menghindari error kompilasi.
+        int colorAttr = isNightMode ? com.google.android.material.R.attr.colorOnSurfaceVariant : com.google.android.material.R.attr.colorOnSurface;
+        // ==================== AKHIR PERUBAHAN ====================
+
+        // Dapatkan nilai warna dari atribut
+        int colorToApply = getThemeColor(getContext(), colorAttr);
+
+        // Terapkan warna sebagai filter pada ikon
+        emptyPlateIcon.setColorFilter(colorToApply, PorterDuff.Mode.SRC_IN);
+        // Atur alpha (transparansi) secara terpisah
+        emptyPlateIcon.setImageAlpha(isNightMode ? 204 : 153); // 80% alpha for dark, 60% for light
+    }
+
+    private int getThemeColor(@NonNull Context context, @AttrRes int colorAttr) {
+        TypedValue typedValue = new TypedValue();
+        context.getTheme().resolveAttribute(colorAttr, typedValue, true);
+        return ContextCompat.getColor(context, typedValue.resourceId);
     }
 }
