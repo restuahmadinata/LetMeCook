@@ -26,7 +26,8 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.miraiprjkt.letmecook.R;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.miraiprjkt.letmecook.database.DatabaseHelper;
 import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
@@ -63,6 +64,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private ImageView imageDetailErrorIcon;
     private TextView textViewDetailErrorMessage;
     private MaterialButton buttonDetailRetry;
+    private FloatingActionButton fabFavorite;
+
+    private DatabaseHelper dbHelper;
+    private boolean isFavorite = false;
+    private Meal currentMeal;
 
     private final String[] funnyNetworkErrorMessages = {
             "Duh, resepnya gak mau keluar tanpa internet! Coba 'Ulangi'.",
@@ -82,6 +88,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
+
+        dbHelper = new DatabaseHelper(this);
 
         mealId = getIntent().getStringExtra(EXTRA_MEAL_ID);
         String mealName = getIntent().getStringExtra(EXTRA_MEAL_NAME);
@@ -121,15 +129,18 @@ public class RecipeDetailActivity extends AppCompatActivity {
         imageDetailErrorIcon = findViewById(R.id.image_detail_error_icon);
         textViewDetailErrorMessage = findViewById(R.id.text_view_detail_error_message);
         buttonDetailRetry = findViewById(R.id.button_detail_retry);
+        fabFavorite = findViewById(R.id.fab_favorite);
     }
 
     private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+        NetworkInfo activeNetworkInfo = cm.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     private void showLoadingState(boolean isLoading) {
         progressBarDetail.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        fabFavorite.setVisibility(isLoading ? View.GONE : View.VISIBLE);
         if (isLoading) {
             nestedScrollViewContent.setVisibility(View.GONE);
             layoutDetailError.setVisibility(View.GONE);
@@ -140,12 +151,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
         showLoadingState(false);
         nestedScrollViewContent.setVisibility(View.GONE);
         layoutDetailError.setVisibility(View.VISIBLE);
+        fabFavorite.setVisibility(View.GONE);
 
         String message;
         int iconResId = R.drawable.ic_search_off;
 
         if (isNetworkError) {
-            message = funnyNetworkErrorMessages[randomGenerator.nextInt(funnyNetworkErrorMessages.length)];
+            message = (customMessage != null) ? customMessage : funnyNetworkErrorMessages[randomGenerator.nextInt(funnyNetworkErrorMessages.length)];
             iconResId = R.drawable.ic_network_error;
             buttonDetailRetry.setVisibility(View.VISIBLE);
         } else {
@@ -160,20 +172,36 @@ public class RecipeDetailActivity extends AppCompatActivity {
         showLoadingState(false);
         nestedScrollViewContent.setVisibility(View.VISIBLE);
         layoutDetailError.setVisibility(View.GONE);
+        fabFavorite.setVisibility(View.VISIBLE);
     }
 
     private void loadRecipeDetails(String id) {
         if (!isNetworkAvailable()) {
-            showErrorState(null, true);
-            return;
+            Log.d(TAG, "Offline mode detected. Trying to load from database.");
+            Meal offlineMeal = dbHelper.getFavoriteMealById(id);
+            if (offlineMeal != null) {
+                Log.d(TAG, "Meal found in database. Displaying offline data.");
+                currentMeal = offlineMeal;
+                isFavorite = true; // Must be a favorite if it's in the DB
+                updateFabIcon();
+                displayRecipeDetails(offlineMeal);
+                showContentState();
+            } else {
+                Log.d(TAG, "Meal not in database. Showing network error.");
+                showErrorState("You are offline and this recipe is not saved in your favorites.", true);
+            }
+            return; // Stop further execution
         }
+
         showLoadingState(true);
         apiService.getMealDetails(id).enqueue(new Callback<MealList>() {
             @Override
             public void onResponse(@NonNull Call<MealList> call, @NonNull Response<MealList> response) {
                 if (response.isSuccessful() && response.body() != null && response.body().getMeals() != null && !response.body().getMeals().isEmpty()) {
-                    Meal meal = response.body().getMeals().get(0);
-                    displayRecipeDetails(meal);
+                    currentMeal = response.body().getMeals().get(0);
+                    isFavorite = dbHelper.isFavorite(currentMeal.getIdMeal());
+                    updateFabIcon();
+                    displayRecipeDetails(currentMeal);
                     showContentState();
                 } else {
                     showErrorState("Failed to load recipe details. Code: " + response.code(), true);
@@ -294,6 +322,20 @@ public class RecipeDetailActivity extends AppCompatActivity {
             textMealDetailSource.setVisibility(View.GONE);
             labelSource.setVisibility(View.GONE);
         }
+
+        fabFavorite.setOnClickListener(v -> {
+            if (currentMeal != null) {
+                if (isFavorite) {
+                    dbHelper.removeFavorite(currentMeal.getIdMeal());
+                    Toast.makeText(RecipeDetailActivity.this, "Removed from favorites", Toast.LENGTH_SHORT).show();
+                } else {
+                    dbHelper.addFavorite(currentMeal);
+                    Toast.makeText(RecipeDetailActivity.this, "Added to favorites", Toast.LENGTH_SHORT).show();
+                }
+                isFavorite = !isFavorite;
+                updateFabIcon();
+            }
+        });
     }
 
     private void addNoInstructionsTextView() {
@@ -304,6 +346,14 @@ public class RecipeDetailActivity extends AppCompatActivity {
         params.setMargins(0, getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_top), 0, 0);
         noInstructionsView.setLayoutParams(params);
         layoutInstructionsContainer.addView(noInstructionsView);
+    }
+
+    private void updateFabIcon() {
+        if (isFavorite) {
+            fabFavorite.setImageResource(R.drawable.ic_favorite_filled);
+        } else {
+            fabFavorite.setImageResource(R.drawable.ic_favorite);
+        }
     }
 
     @Override

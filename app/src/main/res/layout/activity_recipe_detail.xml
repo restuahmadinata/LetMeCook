@@ -8,6 +8,7 @@
     tools:context=".RecipeDetailActivity">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
@@ -36,7 +37,7 @@
                 android:id="@+id/detail_content_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="16dp">
+                android:paddingBottom="80dp">
 
                 <ImageView
                     android:id="@+id/image_meal_detail_thumb"
@@ -192,6 +193,7 @@
                     app:layout_constraintTop_toBottomOf="@id/label_source"
                     tools:text="http://www.example.com" />
 
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.core.widget.NestedScrollView>
 
@@ -237,4 +239,13 @@
                 android:visibility="gone" />
         </LinearLayout>
     </FrameLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_favorite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="Favorite"
+        app:srcCompat="@drawable/ic_favorite" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
