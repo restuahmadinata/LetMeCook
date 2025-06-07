@@ -6,13 +6,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.adapter.FavoriteRecipeAdapter;
@@ -56,11 +54,20 @@ public class FavoritesFragment extends Fragment {
         adapter = new FavoriteRecipeAdapter(getContext(), favoriteMeals);
         recyclerView.setAdapter(adapter);
 
-        // Atur listener untuk tombol kembali ke home
+        // ==================== PERUBAHAN DI SINI ====================
         backToHomeButton.setOnClickListener(v -> {
-            // Gunakan NavController untuk kembali ke home
-            NavHostFragment.findNavController(this).navigate(R.id.navigation_home);
+            // Dapatkan referensi ke MainActivity
+            if (getActivity() != null) {
+                // Cari BottomNavigationView di MainActivity
+                BottomNavigationView bottomNavView = getActivity().findViewById(R.id.nav_view);
+                if (bottomNavView != null) {
+                    // Secara programmatic, pilih item menu Home
+                    // Ini akan memicu listener di MainActivity untuk melakukan navigasi
+                    bottomNavView.setSelectedItemId(R.id.navigation_home);
+                }
+            }
         });
+        // ==================== AKHIR PERUBAHAN ====================
 
         return view;
     }
@@ -81,14 +88,16 @@ public class FavoritesFragment extends Fragment {
         }
 
         // Beri tahu adapter bahwa data telah berubah
-        adapter.notifyDataSetChanged();
+        if(adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
 
         // Periksa apakah daftar kosong atau tidak untuk menampilkan UI yang sesuai
         checkEmptyState();
     }
 
     private void checkEmptyState() {
-        if (favoriteMeals.isEmpty()) {
+        if (favoriteMeals != null && favoriteMeals.isEmpty()) {
             // Jika kosong, tampilkan pesan dan tombol
             recyclerView.setVisibility(View.GONE);
             emptyFavoritesLayout.setVisibility(View.VISIBLE);
