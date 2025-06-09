@@ -82,7 +82,7 @@ public class AiChatFragment extends Fragment {
             chatMessageList.add(new ChatMessage("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!", false));
         }
 
-        chatAdapter = new ChatAdapter(chatMessageList);
+        chatAdapter = new ChatAdapter(requireContext(), chatMessageList);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerViewChat.setLayoutManager(layoutManager);

@@ -1,5 +1,6 @@
 package com.miraiprjkt.letmecook.adapter;
 
+import android.content.Context;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,19 +16,24 @@ import com.miraiprjkt.letmecook.model.ChatMessage;
 
 import java.util.List;
 
+// 1. Impor Markwon
+import io.noties.markwon.Markwon;
+
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     private final List<ChatMessage> chatMessages;
+    private final Markwon markwon; // 2. Buat variabel instance untuk Markwon
 
-    // Definisikan tipe view untuk pesan keluar dan masuk
     private static final int VIEW_TYPE_SENT = 1;
     private static final int VIEW_TYPE_RECEIVED = 2;
 
-    public ChatAdapter(List<ChatMessage> chatMessages) {
+    // 3. Ubah constructor untuk menerima Context
+    public ChatAdapter(Context context, List<ChatMessage> chatMessages) {
         this.chatMessages = chatMessages;
+        // Inisialisasi Markwon di sini
+        this.markwon = Markwon.create(context);
     }
 
-    // Tentukan tipe view berdasarkan pengirim pesan
     @Override
     public int getItemViewType(int position) {
         if (chatMessages.get(position).isFromUser()) {
@@ -40,10 +46,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @NonNull
     @Override
     public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Gunakan layout item_chat_message yang sama untuk keduanya
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_chat_message, parent, false);
-        return new ChatViewHolder(view);
+        // 4. Kirim instance Markwon ke ViewHolder
+        return new ChatViewHolder(view, markwon);
     }
 
     @Override
@@ -60,28 +66,26 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     static class ChatViewHolder extends RecyclerView.ViewHolder {
         private final TextView messageText;
         private final LinearLayout layout;
+        private final Markwon markwon; // 5. Simpan instance Markwon di ViewHolder
 
-        public ChatViewHolder(@NonNull View itemView) {
+        // 6. Ubah constructor ViewHolder untuk menerima Markwon
+        public ChatViewHolder(@NonNull View itemView, Markwon markwon) {
             super(itemView);
-            messageText = itemView.findViewById(R.id.text_chat_message);
-            // Kita butuh parent layout untuk mengatur gravity (posisi kanan/kiri)
-            layout = (LinearLayout) itemView;
+            this.messageText = itemView.findViewById(R.id.text_chat_message);
+            this.layout = (LinearLayout) itemView;
+            this.markwon = markwon;
         }
 
         void bind(ChatMessage chatMessage) {
-            messageText.setText(chatMessage.getMessage());
-
             if (chatMessage.isFromUser()) {
-                // Pesan dari pengguna (keluar)
-                // Atur background ke gelembung 'sent'
+                // Pesan dari pengguna: tampilkan sebagai teks biasa
+                messageText.setText(chatMessage.getMessage());
                 messageText.setBackgroundResource(R.drawable.bg_chat_bubble_sent);
-                // Atur posisi ke kanan (end)
                 layout.setGravity(Gravity.END);
             } else {
-                // Pesan dari AI (masuk)
-                // Atur background ke gelembung 'received'
+                // 7. Pesan dari AI: gunakan Markwon untuk menampilkan Markdown
+                markwon.setMarkdown(messageText, chatMessage.getMessage());
                 messageText.setBackgroundResource(R.drawable.bg_chat_bubble_received);
-                // Atur posisi ke kiri (start)
                 layout.setGravity(Gravity.START);
             }
         }

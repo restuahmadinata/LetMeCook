@@ -75,6 +75,9 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // Markwon untuk merender Markdown di TextView
+    implementation("io.noties.markwon:core:4.6.2")
+
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)
 
