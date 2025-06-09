@@ -1,8 +1,10 @@
 package com.miraiprjkt.letmecook.fragment;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -12,8 +14,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,11 +33,10 @@ import com.miraiprjkt.letmecook.BuildConfig;
 import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.adapter.ChatAdapter;
 import com.miraiprjkt.letmecook.model.ChatMessage;
+import com.miraiprjkt.letmecook.utils.ChatHistoryManager;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 public class AiChatFragment extends Fragment {
 
@@ -41,9 +45,9 @@ public class AiChatFragment extends Fragment {
     private ImageButton buttonSendChat;
     private ProgressBar progressBarChat;
 
-    // Variabel baru untuk adapter dan list pesan
     private ChatAdapter chatAdapter;
     private List<ChatMessage> chatMessageList;
+    private ChatHistoryManager chatHistoryManager;
 
     public AiChatFragment() {
         // Required empty public constructor
@@ -59,46 +63,88 @@ public class AiChatFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        chatHistoryManager = new ChatHistoryManager(requireContext());
+
         recyclerViewChat = view.findViewById(R.id.recycler_view_chat);
         editTextChatInput = view.findViewById(R.id.edit_text_chat_input);
         buttonSendChat = view.findViewById(R.id.button_send_chat);
         progressBarChat = view.findViewById(R.id.progress_bar_chat);
 
         setupChat();
+        setupMenu();
 
         buttonSendChat.setOnClickListener(v -> handleSendEvent());
     }
 
     private void setupChat() {
-        chatMessageList = new ArrayList<>();
+        chatMessageList = chatHistoryManager.loadChatHistory();
+        if (chatMessageList.isEmpty()) {
+            chatMessageList.add(new ChatMessage("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!", false));
+        }
+
         chatAdapter = new ChatAdapter(chatMessageList);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
         recyclerViewChat.setLayoutManager(layoutManager);
         recyclerViewChat.setAdapter(chatAdapter);
+        recyclerViewChat.scrollToPosition(chatMessageList.size() - 1);
+    }
 
-        // Tambahkan pesan sambutan dari AI
-        addMessageToChat("Hello! I'm your cooking assistant. Ask me anything about recipes!", false);
+    private void setupMenu() {
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                // Method ini bisa dikosongkan karena menu sudah di-inflate oleh MainActivity
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                if (menuItem.getItemId() == R.id.action_delete_chat) {
+                    showDeleteConfirmationDialog();
+                    return true; // Menandakan bahwa event klik sudah ditangani
+                }
+                return false; // Biarkan sistem yang menangani event lain
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Hapus Chat")
+                .setMessage("Apakah Anda yakin ingin menghapus seluruh riwayat chat?")
+                .setPositiveButton("Hapus", (dialog, which) -> {
+                    clearChatHistory();
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void clearChatHistory() {
+        chatHistoryManager.clearChatHistory();
+        chatMessageList.clear();
+        chatMessageList.add(new ChatMessage("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!", false));
+        chatAdapter.notifyDataSetChanged();
+        Toast.makeText(getContext(), "Riwayat chat dibersihkan", Toast.LENGTH_SHORT).show();
     }
 
     private void handleSendEvent() {
         String userInput = editTextChatInput.getText().toString().trim();
         if (!userInput.isEmpty()) {
-            addMessageToChat(userInput, true); // Tambahkan pesan pengguna ke UI
-            callGeminiApi(userInput); // Panggil API
-            editTextChatInput.setText(""); // Kosongkan input
+            addMessageToChat(userInput, true);
+            callGeminiApi(userInput);
+            editTextChatInput.setText("");
         } else {
-            Toast.makeText(getContext(), "Please enter a message", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Silakan tulis pesan", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void addMessageToChat(String message, boolean isFromUser) {
-        // Tambahkan pesan ke list
         chatMessageList.add(new ChatMessage(message, isFromUser));
-        // Beri tahu adapter bahwa ada item baru
         chatAdapter.notifyItemInserted(chatMessageList.size() - 1);
-        // Scroll ke pesan terbaru
         recyclerViewChat.scrollToPosition(chatMessageList.size() - 1);
+
+        // Simpan riwayat setiap ada pesan baru
+        chatHistoryManager.saveChatHistory(chatMessageList);
     }
 
     private void callGeminiApi(String query) {
@@ -115,14 +161,14 @@ public class AiChatFragment extends Fragment {
             @Override
             public void onSuccess(GenerateContentResponse result) {
                 String resultText = result.getText();
-                addMessageToChat(resultText, false); // Tambahkan respons AI ke UI
+                addMessageToChat(resultText, false);
                 setLoading(false);
             }
 
             @Override
             public void onFailure(@NonNull Throwable t) {
                 t.printStackTrace();
-                Toast.makeText(getContext(), "Error: Failed to get response.", Toast.LENGTH_SHORT).show();
+                addMessageToChat("Maaf, terjadi masalah saat menyambung. Coba lagi nanti.", false);
                 setLoading(false);
             }
         }, mainExecutor);

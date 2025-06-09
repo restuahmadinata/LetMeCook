@@ -3,27 +3,31 @@ package com.miraiprjkt.letmecook;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageButton;
-import android.widget.TextView;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.Insets;
+import androidx.core.view.MenuProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Lifecycle;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
+
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.miraiprjkt.letmecook.fragment.SettingsFragment;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView customTitleTextView;
-    private ImageButton customBackButton;
     private NavController navController;
-    private ConstraintLayout mainContainer;
+    private MenuProvider currentMenuProvider;
+    private MaterialToolbar toolbar; // Menggunakan MaterialToolbar
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,9 +35,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mainContainer = findViewById(R.id.main_container);
-        customTitleTextView = findViewById(R.id.text_title_custom);
-        customBackButton = findViewById(R.id.button_back_custom);
+        // Inisialisasi Toolbar
+        toolbar = findViewById(R.id.toolbar_main);
+        setSupportActionBar(toolbar); // Penting! Menetapkan toolbar sebagai action bar
+
         BottomNavigationView navView = findViewById(R.id.nav_view);
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment_activity_main);
@@ -43,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
             navView.setOnItemSelectedListener(item -> {
                 NavOptions navOptions = new NavOptions.Builder()
-                        .setPopUpTo(item.getItemId(), true)
+                        .setPopUpTo(navController.getCurrentDestination().getId(), true)
                         .setLaunchSingleTop(true)
                         .build();
                 navController.navigate(item.getItemId(), null, navOptions);
@@ -51,37 +56,45 @@ public class MainActivity extends AppCompatActivity {
             });
 
             navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-                // ==================== AWAL PERUBAHAN ====================
-
-                // Hapus blok 'if' yang menyebabkan error, karena halaman detail sudah menjadi Activity
-                if (destination.getLabel() != null) {
-                    customTitleTextView.setText(destination.getLabel());
-                } else {
-                    customTitleTextView.setText(getString(R.string.app_name));
+                // Set judul pada action bar
+                if (getSupportActionBar() != null) {
+                    if (destination.getLabel() != null) {
+                        getSupportActionBar().setTitle(destination.getLabel());
+                    } else {
+                        getSupportActionBar().setTitle(getString(R.string.app_name));
+                    }
                 }
 
-                // Kode ini sekarang hanya mengontrol tombol kembali untuk fragment
-                ConstraintLayout.LayoutParams titleParams = (ConstraintLayout.LayoutParams) customTitleTextView.getLayoutParams();
-                if (destination.getId() == R.id.navigation_home ||
+                // Hapus menu provider yang lama
+                if (currentMenuProvider != null) {
+                    removeMenuProvider(currentMenuProvider);
+                }
+
+                // Tambahkan menu provider baru jika di fragment chat
+                if (destination.getId() == R.id.navigation_ai_chat) {
+                    currentMenuProvider = new MenuProvider() {
+                        @Override
+                        public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                            menuInflater.inflate(R.menu.chat_menu, menu);
+                        }
+                        @Override
+                        public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                            return false; // Biarkan fragment yang menangani
+                        }
+                    };
+                    addMenuProvider(currentMenuProvider, this, Lifecycle.State.RESUMED);
+                }
+
+                // Mengatur visibilitas tombol kembali
+                boolean isTopLevelDestination = destination.getId() == R.id.navigation_home ||
                         destination.getId() == R.id.navigation_favorites ||
-                        destination.getId() == R.id.navigation_settings) {
-                    customBackButton.setVisibility(View.GONE);
-                    titleParams.startToStart = ConstraintLayout.LayoutParams.PARENT_ID;
-                    titleParams.goneStartMargin = getResources().getDimensionPixelSize(R.dimen.custom_title_margin_start_no_back);
-                    titleParams.startToEnd = ConstraintLayout.LayoutParams.UNSET;
-                } else {
-                    // Logika ini mungkin tidak akan pernah terpanggil lagi, tapi aman untuk dibiarkan
-                    customBackButton.setVisibility(View.VISIBLE);
-                    titleParams.startToEnd = R.id.button_back_custom;
-                    titleParams.resolveLayoutDirection(mainContainer.getLayoutDirection());
-                    titleParams.startToStart = ConstraintLayout.LayoutParams.UNSET;
+                        destination.getId() == R.id.navigation_settings ||
+                        destination.getId() == R.id.navigation_ai_chat;
+
+                if (getSupportActionBar() != null) {
+                    getSupportActionBar().setDisplayHomeAsUpEnabled(!isTopLevelDestination);
                 }
-                customTitleTextView.setLayoutParams(titleParams);
-
-                // ==================== AKHIR PERUBAHAN ====================
             });
-
-            customBackButton.setOnClickListener(v -> navController.navigateUp());
 
         } else {
             Log.e("MainActivity", "NavHostFragment not found!");
@@ -89,9 +102,16 @@ public class MainActivity extends AppCompatActivity {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_container), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            mainContainer.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
+            v.setPadding(systemBars.left, 0, systemBars.right, 0); // Hanya atur padding kiri & kanan
+            toolbar.setPadding(0, systemBars.top, 0, 0); // Atur padding atas untuk toolbar
             return insets;
         });
+    }
+
+    // Menangani klik tombol kembali di action bar
+    @Override
+    public boolean onSupportNavigateUp() {
+        return navController.navigateUp() || super.onSupportNavigateUp();
     }
 
     private void applyThemeOnStartup() {
