@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -55,10 +55,9 @@ public class MainActivity extends AppCompatActivity {
                 NavOptions navOptions = new NavOptions.Builder()
                         .setLaunchSingleTop(true)
                         .setPopUpTo(navController.getCurrentDestination().getId(), true, false)
-                        .setEnterAnim(R.anim.slide_in_up)
-                        .setPopExitAnim(R.anim.slide_out_down)
+                        .setEnterAnim(R.anim.fade_in)
+                        .setPopExitAnim(R.anim.fade_out)
                         .build();
-                // ============== AKHIR PERUBAHAN ==============
                 navController.navigate(item.getItemId(), null, navOptions);
                 return true;
             });
