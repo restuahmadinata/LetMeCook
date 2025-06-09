@@ -30,6 +30,7 @@ import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.java.GenerativeModelFutures;
 import com.google.ai.client.generativeai.type.Content;
 import com.google.ai.client.generativeai.type.GenerateContentResponse;
+import com.google.ai.client.generativeai.type.TextPart;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,6 +40,8 @@ import com.miraiprjkt.letmecook.adapter.ChatAdapter;
 import com.miraiprjkt.letmecook.model.ChatMessage;
 import com.miraiprjkt.letmecook.utils.ChatHistoryManager;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -47,7 +50,7 @@ public class AiChatFragment extends Fragment {
     private RecyclerView recyclerViewChat;
     private EditText editTextChatInput;
     private ImageButton buttonSendChat;
-    private LottieAnimationView lottieLoaderChat; // Mengganti ProgressBar
+    private LottieAnimationView lottieLoaderChat;
 
     private ChatAdapter chatAdapter;
     private List<ChatMessage> chatMessageList;
@@ -72,11 +75,11 @@ public class AiChatFragment extends Fragment {
         recyclerViewChat = view.findViewById(R.id.recycler_view_chat);
         editTextChatInput = view.findViewById(R.id.edit_text_chat_input);
         buttonSendChat = view.findViewById(R.id.button_send_chat);
-        lottieLoaderChat = view.findViewById(R.id.lottie_loader_chat); // Inisialisasi Lottie
+        lottieLoaderChat = view.findViewById(R.id.lottie_loader_chat);
 
         setupChat();
         setupMenu();
-        setupLottieTheme(); // Panggil metode untuk tema Lottie
+        setupLottieTheme();
 
         buttonSendChat.setOnClickListener(v -> handleSendEvent());
     }
@@ -156,20 +159,50 @@ public class AiChatFragment extends Fragment {
         chatMessageList.add(new ChatMessage(message, isFromUser));
         chatAdapter.notifyItemInserted(chatMessageList.size() - 1);
         recyclerViewChat.scrollToPosition(chatMessageList.size() - 1);
-
         chatHistoryManager.saveChatHistory(chatMessageList);
     }
 
     private void callGeminiApi(String query) {
         setLoading(true);
 
+        // Gunakan constructor yang paling sederhana dan stabil
         GenerativeModel gm = new GenerativeModel("gemini-1.5-flash", BuildConfig.GEMINI_API_KEY);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
 
-        Content content = new Content.Builder().addText(query).build();
+        // ==================== PENDEKATAN BARU YANG STABIL ====================
+        // Buat riwayat chat yang akan dikirim ke API
+        List<Content> historyForApi = new ArrayList<>();
+
+        // 1. Tambahkan "System Instruction" secara manual sebagai giliran pertama dari 'user'
+        String systemInstructionText = "Kamu adalah 'LetMeCook Assistant', seorang asisten koki virtual yang ramah dan ahli dalam segala jenis resep. Selalu berikan jawaban yang jelas dan mudah diikuti. Gunakan format Markdown untuk daftar dan langkah-langkah. Jika pengguna membahas hal di luar topik masakan, coba roasting dia sedikit.";
+        historyForApi.add(new Content("user", Collections.singletonList(new TextPart(systemInstructionText))));
+
+        // 2. Tambahkan jawaban "persetujuan" dari 'model' untuk membuat pasangan yang valid
+        historyForApi.add(new Content("model", Collections.singletonList(new TextPart("Tentu, saya mengerti. Saya adalah LetMeCook Assistant. Siap membantu!"))));
+
+        // 3. Tambahkan riwayat percakapan yang sebenarnya
+        for (ChatMessage message : chatMessageList) {
+            // Lewati pesan sapaan default dari UI
+            if (message.getMessage().equals("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!")) {
+                continue;
+            }
+            if (message.isFromUser()) {
+                historyForApi.add(new Content("user", Collections.singletonList(new TextPart(message.getMessage()))));
+            } else {
+                historyForApi.add(new Content("model", Collections.singletonList(new TextPart(message.getMessage()))));
+            }
+        }
+
+        // 4. Mulai sesi chat dengan riwayat yang sudah diformat dengan benar
+        com.google.ai.client.generativeai.java.ChatFutures chat = model.startChat(historyForApi);
+
+        // Buat content untuk pesan baru dari pengguna
+        Content userMessageContent = new Content.Builder().addText(query).build();
+        // =====================================================================
+
+        ListenableFuture<GenerateContentResponse> response = chat.sendMessage(userMessageContent);
         Executor mainExecutor = ContextCompat.getMainExecutor(requireContext());
 
-        ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
             @Override
             public void onSuccess(GenerateContentResponse result) {
@@ -181,7 +214,8 @@ public class AiChatFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 t.printStackTrace();
-                addMessageToChat("Maaf, terjadi masalah saat menyambung. Coba lagi nanti.", false);
+                // Jika masih gagal, kemungkinan besar masalahnya ada pada API Key Anda.
+                addMessageToChat("Gagal terhubung ke AI. Pastikan API Key Anda valid dan coba lagi.", false);
                 setLoading(false);
             }
         }, mainExecutor);
@@ -190,7 +224,6 @@ public class AiChatFragment extends Fragment {
     private void setLoading(boolean isLoading) {
         lottieLoaderChat.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         if (isLoading) {
-            // Scroll ke bawah agar loader terlihat jika pesan terakhir tidak terlihat
             recyclerViewChat.scrollToPosition(chatAdapter.getItemCount() - 1);
         }
         buttonSendChat.setEnabled(!isLoading);
