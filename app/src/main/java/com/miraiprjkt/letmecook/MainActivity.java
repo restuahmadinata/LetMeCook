@@ -1,3 +1,4 @@
+// app/src/main/java/com/miraiprjkt/letmecook/MainActivity.java
 package com.miraiprjkt.letmecook;
 
 import android.content.SharedPreferences;
@@ -47,10 +48,14 @@ public class MainActivity extends AppCompatActivity {
             navController = navHostFragment.getNavController();
 
             navView.setOnItemSelectedListener(item -> {
+                // ============== AWAL PERUBAHAN: HANYA ANIMASI SLIDE UP ==============
                 NavOptions navOptions = new NavOptions.Builder()
-                        .setPopUpTo(navController.getCurrentDestination().getId(), true)
                         .setLaunchSingleTop(true)
+                        .setPopUpTo(navController.getCurrentDestination().getId(), true, false)
+                        .setEnterAnim(R.anim.slide_in_up)
+                        .setPopExitAnim(R.anim.slide_out_down)
                         .build();
+                // ============== AKHIR PERUBAHAN ==============
                 navController.navigate(item.getItemId(), null, navOptions);
                 return true;
             });
