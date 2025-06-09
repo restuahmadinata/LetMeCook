@@ -1,3 +1,4 @@
+// app/src/main/java/com/miraiprjkt/letmecook/RecipeDetailActivity.java
 package com.miraiprjkt.letmecook;
 
 import android.content.Context;
@@ -18,6 +19,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog; // Import AlertDialog
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.widget.NestedScrollView;
@@ -323,20 +325,42 @@ public class RecipeDetailActivity extends AppCompatActivity {
             labelSource.setVisibility(View.GONE);
         }
 
+        // ============== AWAL PERUBAHAN ==============
         fabFavorite.setOnClickListener(v -> {
             if (currentMeal != null) {
                 if (isFavorite) {
-                    dbHelper.removeFavorite(currentMeal.getIdMeal());
-                    Toast.makeText(RecipeDetailActivity.this, "Removed from favorites", Toast.LENGTH_SHORT).show();
+                    // Jika sudah favorit, tampilkan dialog konfirmasi sebelum menghapus
+                    showDeleteConfirmationDialog();
                 } else {
+                    // Jika belum favorit, langsung tambahkan
                     dbHelper.addFavorite(currentMeal);
-                    Toast.makeText(RecipeDetailActivity.this, "Added to favorites", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RecipeDetailActivity.this, "Ditambahkan ke favorit", Toast.LENGTH_SHORT).show();
+                    isFavorite = true;
+                    updateFabIcon();
                 }
-                isFavorite = !isFavorite;
-                updateFabIcon();
             }
         });
+        // ============== AKHIR PERUBAHAN ==============
     }
+
+    // ============== METODE BARU UNTUK DIALOG KONFIRMASI ==============
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Hapus Favorit")
+                .setMessage("Apakah Anda yakin ingin menghapus resep ini dari daftar favorit?")
+                .setPositiveButton("Hapus", (dialog, which) -> {
+                    // Pengguna menekan "Hapus", maka jalankan proses penghapusan
+                    if (currentMeal != null) {
+                        dbHelper.removeFavorite(currentMeal.getIdMeal());
+                        Toast.makeText(RecipeDetailActivity.this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
+                        isFavorite = false;
+                        updateFabIcon();
+                    }
+                })
+                .setNegativeButton("Batal", null) // Tombol "Batal" tidak melakukan apa-apa
+                .show();
+    }
+    // =============================================================
 
     private void addNoInstructionsTextView() {
         TextView noInstructionsView = new TextView(this);
