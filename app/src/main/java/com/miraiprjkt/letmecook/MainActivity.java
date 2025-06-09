@@ -48,7 +48,10 @@ public class MainActivity extends AppCompatActivity {
             navController = navHostFragment.getNavController();
 
             navView.setOnItemSelectedListener(item -> {
-                // ============== AWAL PERUBAHAN: HANYA ANIMASI SLIDE UP ==============
+                if (item.getItemId() == navController.getCurrentDestination().getId()) {
+                    return false; // Mengembalikan false agar tidak ada efek re-selection
+                }
+
                 NavOptions navOptions = new NavOptions.Builder()
                         .setLaunchSingleTop(true)
                         .setPopUpTo(navController.getCurrentDestination().getId(), true, false)
