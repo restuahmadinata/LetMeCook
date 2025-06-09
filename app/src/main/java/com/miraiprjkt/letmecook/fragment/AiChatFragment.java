@@ -1,5 +1,6 @@
 package com.miraiprjkt.letmecook.fragment;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -9,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,6 +22,10 @@ import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieProperty;
+import com.airbnb.lottie.model.KeyPath;
+import com.airbnb.lottie.value.LottieValueCallback;
 import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.java.GenerativeModelFutures;
 import com.google.ai.client.generativeai.type.Content;
@@ -43,7 +47,7 @@ public class AiChatFragment extends Fragment {
     private RecyclerView recyclerViewChat;
     private EditText editTextChatInput;
     private ImageButton buttonSendChat;
-    private ProgressBar progressBarChat;
+    private LottieAnimationView lottieLoaderChat; // Mengganti ProgressBar
 
     private ChatAdapter chatAdapter;
     private List<ChatMessage> chatMessageList;
@@ -68,12 +72,24 @@ public class AiChatFragment extends Fragment {
         recyclerViewChat = view.findViewById(R.id.recycler_view_chat);
         editTextChatInput = view.findViewById(R.id.edit_text_chat_input);
         buttonSendChat = view.findViewById(R.id.button_send_chat);
-        progressBarChat = view.findViewById(R.id.progress_bar_chat);
+        lottieLoaderChat = view.findViewById(R.id.lottie_loader_chat); // Inisialisasi Lottie
 
         setupChat();
         setupMenu();
+        setupLottieTheme(); // Panggil metode untuk tema Lottie
 
         buttonSendChat.setOnClickListener(v -> handleSendEvent());
+    }
+
+    private void setupLottieTheme() {
+        if (getContext() == null) return;
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            KeyPath keyPath = new KeyPath("**", "Stroke 1", "Color");
+            int colorForDarkMode = ContextCompat.getColor(getContext(), R.color.md_theme_onSurface);
+            LottieValueCallback<Integer> colorCallback = new LottieValueCallback<>(colorForDarkMode);
+            lottieLoaderChat.addValueCallback(keyPath, LottieProperty.STROKE_COLOR, colorCallback);
+        }
     }
 
     private void setupChat() {
@@ -101,9 +117,9 @@ public class AiChatFragment extends Fragment {
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
                 if (menuItem.getItemId() == R.id.action_delete_chat) {
                     showDeleteConfirmationDialog();
-                    return true; // Menandakan bahwa event klik sudah ditangani
+                    return true;
                 }
-                return false; // Biarkan sistem yang menangani event lain
+                return false;
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
@@ -112,9 +128,7 @@ public class AiChatFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setTitle("Hapus Chat")
                 .setMessage("Apakah Anda yakin ingin menghapus seluruh riwayat chat?")
-                .setPositiveButton("Hapus", (dialog, which) -> {
-                    clearChatHistory();
-                })
+                .setPositiveButton("Hapus", (dialog, which) -> clearChatHistory())
                 .setNegativeButton("Batal", null)
                 .show();
     }
@@ -143,7 +157,6 @@ public class AiChatFragment extends Fragment {
         chatAdapter.notifyItemInserted(chatMessageList.size() - 1);
         recyclerViewChat.scrollToPosition(chatMessageList.size() - 1);
 
-        // Simpan riwayat setiap ada pesan baru
         chatHistoryManager.saveChatHistory(chatMessageList);
     }
 
@@ -175,7 +188,11 @@ public class AiChatFragment extends Fragment {
     }
 
     private void setLoading(boolean isLoading) {
-        progressBarChat.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        lottieLoaderChat.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (isLoading) {
+            // Scroll ke bawah agar loader terlihat jika pesan terakhir tidak terlihat
+            recyclerViewChat.scrollToPosition(chatAdapter.getItemCount() - 1);
+        }
         buttonSendChat.setEnabled(!isLoading);
         editTextChatInput.setEnabled(!isLoading);
     }

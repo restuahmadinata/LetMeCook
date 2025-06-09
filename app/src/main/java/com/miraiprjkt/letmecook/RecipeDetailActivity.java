@@ -1,8 +1,8 @@
-// app/src/main/java/com/miraiprjkt/letmecook/RecipeDetailActivity.java
 package com.miraiprjkt.letmecook;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -13,17 +13,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog; // Import AlertDialog
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 
+import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.LottieProperty;
+import com.airbnb.lottie.model.KeyPath;
+import com.airbnb.lottie.value.LottieValueCallback;
 import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -60,7 +64,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private TextView labelSource;
     private ChipGroup chipGroupDetailTags;
     private MaterialButton buttonYoutube;
-    private ProgressBar progressBarDetail;
+    private LottieAnimationView lottieLoaderDetail;
     private NestedScrollView nestedScrollViewContent;
     private LinearLayout layoutDetailError;
     private ImageView imageDetailErrorIcon;
@@ -100,6 +104,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         apiService = RetrofitClient.getClient().create(ApiService.class);
 
         initializeViews();
+        setupLottieTheme();
 
         buttonDetailRetry.setOnClickListener(v -> {
             if (mealId != null && !mealId.isEmpty()) {
@@ -126,12 +131,22 @@ public class RecipeDetailActivity extends AppCompatActivity {
         buttonYoutube = findViewById(R.id.button_youtube);
         textMealDetailSource = findViewById(R.id.text_meal_detail_source);
         labelSource = findViewById(R.id.label_source);
-        progressBarDetail = findViewById(R.id.progress_bar_detail);
+        lottieLoaderDetail = findViewById(R.id.lottie_loader_detail);
         layoutDetailError = findViewById(R.id.layout_detail_error);
         imageDetailErrorIcon = findViewById(R.id.image_detail_error_icon);
         textViewDetailErrorMessage = findViewById(R.id.text_view_detail_error_message);
         buttonDetailRetry = findViewById(R.id.button_detail_retry);
         fabFavorite = findViewById(R.id.fab_favorite);
+    }
+
+    private void setupLottieTheme() {
+        int nightModeFlags = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
+            KeyPath keyPath = new KeyPath("**", "Stroke 1", "Color");
+            int colorForDarkMode = ContextCompat.getColor(this, R.color.md_theme_onSurface);
+            LottieValueCallback<Integer> colorCallback = new LottieValueCallback<>(colorForDarkMode);
+            lottieLoaderDetail.addValueCallback(keyPath, LottieProperty.STROKE_COLOR, colorCallback);
+        }
     }
 
     private boolean isNetworkAvailable() {
@@ -141,7 +156,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     private void showLoadingState(boolean isLoading) {
-        progressBarDetail.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        lottieLoaderDetail.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         fabFavorite.setVisibility(isLoading ? View.GONE : View.VISIBLE);
         if (isLoading) {
             nestedScrollViewContent.setVisibility(View.GONE);
@@ -325,14 +340,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
             labelSource.setVisibility(View.GONE);
         }
 
-        // ============== AWAL PERUBAHAN ==============
         fabFavorite.setOnClickListener(v -> {
             if (currentMeal != null) {
                 if (isFavorite) {
-                    // Jika sudah favorit, tampilkan dialog konfirmasi sebelum menghapus
                     showDeleteConfirmationDialog();
                 } else {
-                    // Jika belum favorit, langsung tambahkan
                     dbHelper.addFavorite(currentMeal);
                     Toast.makeText(RecipeDetailActivity.this, "Ditambahkan ke favorit", Toast.LENGTH_SHORT).show();
                     isFavorite = true;
@@ -340,16 +352,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 }
             }
         });
-        // ============== AKHIR PERUBAHAN ==============
     }
 
-    // ============== METODE BARU UNTUK DIALOG KONFIRMASI ==============
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Hapus Favorit")
                 .setMessage("Apakah Anda yakin ingin menghapus resep ini dari daftar favorit?")
                 .setPositiveButton("Hapus", (dialog, which) -> {
-                    // Pengguna menekan "Hapus", maka jalankan proses penghapusan
                     if (currentMeal != null) {
                         dbHelper.removeFavorite(currentMeal.getIdMeal());
                         Toast.makeText(RecipeDetailActivity.this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
@@ -357,10 +366,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
                         updateFabIcon();
                     }
                 })
-                .setNegativeButton("Batal", null) // Tombol "Batal" tidak melakukan apa-apa
+                .setNegativeButton("Batal", null)
                 .show();
     }
-    // =============================================================
 
     private void addNoInstructionsTextView() {
         TextView noInstructionsView = new TextView(this);
