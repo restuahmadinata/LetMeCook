@@ -14,6 +14,12 @@
         android:name="com.miraiprjkt.letmecook.fragment.FavoritesFragment"
         android:label="Favorites"
         tools:layout="@layout/fragment_favorites" />
+
+    <fragment
+        android:id="@+id/navigation_ai_chat"
+        android:name="com.miraiprjkt.letmecook.fragment.AiChatFragment"
+        android:label="AI Assistant"
+        tools:layout="@layout/fragment_ai_chat" />
     <fragment
         android:id="@+id/navigation_settings"
         android:name="com.miraiprjkt.letmecook.fragment.SettingsFragment"
