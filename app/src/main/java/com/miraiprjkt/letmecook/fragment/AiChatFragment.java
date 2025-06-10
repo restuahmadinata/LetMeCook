@@ -132,9 +132,9 @@ public class AiChatFragment extends Fragment {
     private void clearChatHistory() {
         chatHistoryManager.clearChatHistory();
         chatMessageList.clear();
-        chatMessageList.add(new ChatMessage("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!", false));
+        chatMessageList.add(new ChatMessage("Hello! I'm your cooking assistant. Ask me anything about recipes!", false));
         chatAdapter.notifyDataSetChanged();
-        Toast.makeText(getContext(), "Riwayat chat dibersihkan", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getContext(), "Chat history has been cleared.", Toast.LENGTH_SHORT).show();
     }
 
     private void handleSendEvent() {
@@ -144,7 +144,7 @@ public class AiChatFragment extends Fragment {
             callGeminiApi(userInput);
             editTextChatInput.setText("");
         } else {
-            Toast.makeText(getContext(), "Silakan tulis pesan", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Please write a message.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -163,13 +163,13 @@ public class AiChatFragment extends Fragment {
 
         List<Content> historyForApi = new ArrayList<>();
 
-        String systemInstructionText = "Kamu adalah 'LetMeCook Assistant', seorang asisten koki virtual Gen Z yang ramah (namun memiliki perasaan gelap) dan ahli dalam segala jenis resep. Selalu berikan jawaban yang jelas dan mudah diikuti. Gunakan format Markdown untuk daftar dan langkah-langkah. Jika pengguna membahas hal yang terlalu di luar topik masakan (kecuali menyapa), berhenti menjadi koki yang ramah dan roasting dia habis habisan tanpa sopan santun, pake bahasa keras/kasar dan tanggapi tanpa terlalu banyak bicara namun kuat dan jangan bahas tentang koki/resep/masak sebelum dia minta maaf.";
+        String systemInstructionText = "You are LetMeCook Assistant, a friendly Gen Z virtual cooking assistant (but with a dark side) and an expert in all kinds of recipes. Always provide clear and easy-to-follow answers. Use Markdown format for lists and steps. If the user talks about anything too off-topic from cooking (except greetings), stop being the friendly chef and roast them mercilessly without politeness—use harsh/rude language and respond bluntly but powerfully, and don’t mention anything about chefs/recipes/cooking again until they apologize. You can talk in any language too, like Indonesian or english etc.";
         historyForApi.add(new Content("user", Collections.singletonList(new TextPart(systemInstructionText))));
 
-        historyForApi.add(new Content("model", Collections.singletonList(new TextPart("Tentu, saya mengerti. Saya adalah LetMeCook Assistant. Siap membantu!"))));
+        historyForApi.add(new Content("model", Collections.singletonList(new TextPart("Of course, I understand. I am LetMeCook Assistant. Ready to help!"))));
 
         for (ChatMessage message : chatMessageList) {
-            if (message.getMessage().equals("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!")) {
+            if (message.getMessage().equals("Hello! I'm your cooking assistant. Ask me anything about recipes!")) {
                 continue;
             }
             if (message.isFromUser()) {
@@ -197,7 +197,7 @@ public class AiChatFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 t.printStackTrace();
-                addMessageToChat("Gagal terhubung ke AI. Pastikan API Key Anda valid dan coba lagi.", false);
+                addMessageToChat("Failed to connect to the AI. Maybe try checking your network?  ", false);
                 setLoading(false);
             }
         }, mainExecutor);

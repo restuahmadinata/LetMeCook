@@ -15,7 +15,7 @@
             android:id="@+id/text_view_setting_header_theme"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tampilan"
+            android:text="Display"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:layout_marginBottom="8dp"/>
 
@@ -32,7 +32,7 @@
                     android:id="@+id/text_dark_mode_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Mode Gelap"
+                    android:text="Dark Mode"
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
@@ -55,7 +55,7 @@
             android:id="@+id/text_view_setting_header_about"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tentang Aplikasi"
+            android:text="About App"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"/>
@@ -87,14 +87,14 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Versi 1.0"
+                    android:text="Version 6.9"
                     android:textAppearance="?attr/textAppearanceBody2"
                     android:layout_marginBottom="16dp"/>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="LetMeCook adalah aplikasi resep makanan dan minuman yang dibuat untuk menemukan inspirasi memasak setiap hari. Jelajahi berbagai kategori, cari resep favoritmu, dan mulailah petualangan memasakmu!"
+                    android:text="LetMeCook is a food and drink recipe app designed to help you find daily cooking inspiration. Explore various categories, search for your favorite recipes, and start your cooking adventure!"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:gravity="center"
                     android:lineSpacingExtra="4dp"/>

@@ -76,15 +76,15 @@ public class HomeFragment extends Fragment {
     );
 
     private final String[] funnyNoResultsMessages = {
-            "Hmm, resepnya lagi ngumpet nih! Coba kata kunci lain?",
-            "Dapur kita lagi kosong melompong untuk pencarian ini. Yuk, cari yang lain!",
-            "Chef Google bilang: 'Resep tidak ditemukan, tapi jangan menyerah!'"
+            "Hmm, the recipe’s hiding right now! Try another keyword?",
+            "Our kitchen’s totally empty for this search. Let’s find something else!",
+            "Chef Google says: 'Recipe not found, but don’t give up!'"
     };
 
     private final String[] funnyNetworkErrorMessages = {
-            "Waduh, sinyalnya lagi jalan-jalan! Coba 'Ulangi' nanti.",
-            "Internetnya lagi masak rendang, lama nih. Klik 'Ulangi' aja!",
-            "Server resepnya lagi tidur siang. Bangunin pakai tombol 'Ulangi' yuk!"
+            "Yikes, the signal's out on a stroll! Try 'Retry' later.",
+            "The internet’s busy cooking rendang—this might take a while. Just click 'Retry'!",
+            "The recipe server's taking a nap. Wake it up with the 'Retry' button!"
     };
 
     public HomeFragment() {

@@ -12,7 +12,7 @@
         android:layout_gravity="start"
         android:background="@drawable/bg_chat_bubble_received"
         android:padding="12dp"
-        android:text="Ini adalah contoh pesan."
+        android:text="Hello! How can I help you with recipes today?"
         android:textColor="?attr/colorOnSurface"
         android:textSize="16sp" />
 

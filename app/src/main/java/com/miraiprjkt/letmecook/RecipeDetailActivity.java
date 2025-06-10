@@ -69,9 +69,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private Meal currentMeal;
 
     private final String[] funnyNetworkErrorMessages = {
-            "Duh, resepnya gak mau keluar tanpa internet! Coba 'Ulangi'.",
-            "Sinyal ke dapur resep lagi putus, sambungin lagi yuk!",
-            "Resep ini lagi malu-malu, butuh internet biar PD. Klik 'Ulangi'."
+            "Oops, the recipe won’t show up without internet! Try 'Retry'.",
+            "The recipe kitchen’s offline—let’s reconnect!",
+            "This recipe’s feeling shy, needs internet to gain confidence. Hit 'Retry'."
     };
 
     @Override
@@ -343,7 +343,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     showDeleteConfirmationDialog();
                 } else {
                     dbHelper.addFavorite(currentMeal);
-                    Toast.makeText(RecipeDetailActivity.this, "Ditambahkan ke favorit", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RecipeDetailActivity.this, "Added to your favorites list!", Toast.LENGTH_SHORT).show();
                     isFavorite = true;
                     updateFabIcon();
                 }
@@ -353,17 +353,17 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void showDeleteConfirmationDialog() {
         new AlertDialog.Builder(this)
-                .setTitle("Hapus Favorit")
-                .setMessage("Apakah Anda yakin ingin menghapus resep ini dari daftar favorit?")
-                .setPositiveButton("Hapus", (dialog, which) -> {
+                .setTitle("Delete Favorite Recipe")
+                .setMessage("Are you sure you want to remove this recipe from your favorites list?")
+                .setPositiveButton("Delete", (dialog, which) -> {
                     if (currentMeal != null) {
                         dbHelper.removeFavorite(currentMeal.getIdMeal());
-                        Toast.makeText(RecipeDetailActivity.this, "Dihapus dari favorit", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RecipeDetailActivity.this, "Removed from favorites list", Toast.LENGTH_SHORT).show();
                         isFavorite = false;
                         updateFabIcon();
                     }
                 })
-                .setNegativeButton("Batal", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
