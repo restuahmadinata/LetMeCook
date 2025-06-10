@@ -59,7 +59,7 @@ Aplikasi ini dibangun dengan fokus pada praktik Android modern dan komponen yang
 
 1.  **Clone Repositori**
     ```bash
-    git clone [https://github.com/restuahmadinata/letmecook.git](https://github.com/restuahmadinata/letmecook.git)
+    git clone https://github.com/restuahmadinata/letmecook.git
     ```
 2.  **Tambahkan API Key**
     -   Buat berkas `local.properties` di direktori *root* proyek.
