@@ -5,12 +5,39 @@
     android:layout_height="match_parent"
     tools:context=".fragment.FavoritesFragment">
 
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/search_card_container_favorites"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="?attr/colorOutline"
+        app:strokeWidth="1dp">
+
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/search_view_favorites"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:iconifiedByDefault="false"
+            app:queryBackground="@android:color/transparent"
+            app:queryHint="Search in favorites..." />
+
+    </com.google.android.material.card.MaterialCardView>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_favorites"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/search_card_container_favorites"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -24,7 +51,7 @@
         android:gravity="center"
         android:padding="32dp"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/search_card_container_favorites"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -38,6 +65,7 @@
             android:contentDescription="Empty Favorites"/>
 
         <TextView
+            android:id="@+id/text_view_empty_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Your cookbook is looking a bit lonely!"
@@ -46,6 +74,7 @@
             android:gravity="center"/>
 
         <TextView
+            android:id="@+id/text_view_empty_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Let's go on a recipe hunt and find something delicious to save."
