@@ -1,4 +1,3 @@
-// app/src/main/java/com/miraiprjkt/letmecook/model/Meal.java
 package com.miraiprjkt.letmecook.model;
 
 import com.google.gson.annotations.SerializedName;
@@ -6,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Meal {
-    // Informasi dasar yang sudah ada
     @SerializedName("idMeal")
     private String idMeal;
 
@@ -16,7 +14,6 @@ public class Meal {
     @SerializedName("strMealThumb")
     private String strMealThumb;
 
-    // Informasi tambahan dari endpoint lookup.php
     @SerializedName("strDrinkAlternate")
     private String strDrinkAlternate;
 
@@ -35,7 +32,6 @@ public class Meal {
     @SerializedName("strYoutube")
     private String strYoutube;
 
-    // Bahan-bahan (strIngredient1 - strIngredient20)
     @SerializedName("strIngredient1") private String strIngredient1;
     @SerializedName("strIngredient2") private String strIngredient2;
     @SerializedName("strIngredient3") private String strIngredient3;
@@ -57,7 +53,6 @@ public class Meal {
     @SerializedName("strIngredient19") private String strIngredient19;
     @SerializedName("strIngredient20") private String strIngredient20;
 
-    // Takaran (strMeasure1 - strMeasure20)
     @SerializedName("strMeasure1") private String strMeasure1;
     @SerializedName("strMeasure2") private String strMeasure2;
     @SerializedName("strMeasure3") private String strMeasure3;
@@ -91,10 +86,8 @@ public class Meal {
     @SerializedName("dateModified")
     private String dateModified;
 
-    // Getter methods
     public String getIdMeal() { return idMeal; }
     public String getStrMeal() { return strMeal; }
-    public String getStrDrinkAlternate() { return strDrinkAlternate; }
     public String getStrCategory() { return strCategory; }
     public String getStrArea() { return strArea; }
     public String getStrInstructions() { return strInstructions; }
@@ -102,14 +95,10 @@ public class Meal {
     public String getStrTags() { return strTags; }
     public String getStrYoutube() { return strYoutube; }
     public String getStrSource() { return strSource; }
-    public String getStrImageSource() { return strImageSource; }
-    public String getStrCreativeCommonsConfirmed() { return strCreativeCommonsConfirmed; }
-    public String getDateModified() { return dateModified; }
 
-    // Setters
+
     public void setIdMeal(String idMeal) { this.idMeal = idMeal; }
     public void setStrMeal(String strMeal) { this.strMeal = strMeal; }
-    public void setStrDrinkAlternate(String strDrinkAlternate) { this.strDrinkAlternate = strDrinkAlternate; }
     public void setStrCategory(String strCategory) { this.strCategory = strCategory; }
     public void setStrArea(String strArea) { this.strArea = strArea; }
     public void setStrInstructions(String strInstructions) { this.strInstructions = strInstructions; }
@@ -117,12 +106,7 @@ public class Meal {
     public void setStrTags(String strTags) { this.strTags = strTags; }
     public void setStrYoutube(String strYoutube) { this.strYoutube = strYoutube; }
     public void setStrSource(String strSource) { this.strSource = strSource; }
-    public void setStrImageSource(String strImageSource) { this.strImageSource = strImageSource; }
-    public void setStrCreativeCommonsConfirmed(String strCreativeCommonsConfirmed) { this.strCreativeCommonsConfirmed = strCreativeCommonsConfirmed; }
-    public void setDateModified(String dateModified) { this.dateModified = dateModified; }
 
-
-    // Ingredient Getters
     public String getStrIngredient1() { return strIngredient1; }
     public String getStrIngredient2() { return strIngredient2; }
     public String getStrIngredient3() { return strIngredient3; }
@@ -144,7 +128,6 @@ public class Meal {
     public String getStrIngredient19() { return strIngredient19; }
     public String getStrIngredient20() { return strIngredient20; }
 
-    // Ingredient Setters
     public void setStrIngredient1(String strIngredient1) { this.strIngredient1 = strIngredient1; }
     public void setStrIngredient2(String strIngredient2) { this.strIngredient2 = strIngredient2; }
     public void setStrIngredient3(String strIngredient3) { this.strIngredient3 = strIngredient3; }
@@ -166,7 +149,6 @@ public class Meal {
     public void setStrIngredient19(String strIngredient19) { this.strIngredient19 = strIngredient19; }
     public void setStrIngredient20(String strIngredient20) { this.strIngredient20 = strIngredient20; }
 
-    // Measure Getters
     public String getStrMeasure1() { return strMeasure1; }
     public String getStrMeasure2() { return strMeasure2; }
     public String getStrMeasure3() { return strMeasure3; }
@@ -188,7 +170,6 @@ public class Meal {
     public String getStrMeasure19() { return strMeasure19; }
     public String getStrMeasure20() { return strMeasure20; }
 
-    // Measure Setters
     public void setStrMeasure1(String strMeasure1) { this.strMeasure1 = strMeasure1; }
     public void setStrMeasure2(String strMeasure2) { this.strMeasure2 = strMeasure2; }
     public void setStrMeasure3(String strMeasure3) { this.strMeasure3 = strMeasure3; }
@@ -210,10 +191,7 @@ public class Meal {
     public void setStrMeasure19(String strMeasure19) { this.strMeasure19 = strMeasure19; }
     public void setStrMeasure20(String strMeasure20) { this.strMeasure20 = strMeasure20; }
 
-    /**
-     * Helper method untuk mendapatkan daftar bahan dan takarannya yang tidak null/kosong.
-     * @return List of strings, each string is "Measure Ingredient"
-     */
+
     public List<String> getIngredientsWithMeasures() {
         List<String> ingredientsList = new ArrayList<>();
         String[] ingredients = {

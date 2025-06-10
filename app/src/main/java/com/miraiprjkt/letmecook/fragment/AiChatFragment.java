@@ -11,7 +11,6 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -21,7 +20,6 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
@@ -39,25 +37,21 @@ import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.adapter.ChatAdapter;
 import com.miraiprjkt.letmecook.model.ChatMessage;
 import com.miraiprjkt.letmecook.utils.ChatHistoryManager;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 
 public class AiChatFragment extends Fragment {
-
     private RecyclerView recyclerViewChat;
     private EditText editTextChatInput;
     private ImageButton buttonSendChat;
     private LottieAnimationView lottieLoaderChat;
-
     private ChatAdapter chatAdapter;
     private List<ChatMessage> chatMessageList;
     private ChatHistoryManager chatHistoryManager;
 
     public AiChatFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -113,7 +107,6 @@ public class AiChatFragment extends Fragment {
         requireActivity().addMenuProvider(new MenuProvider() {
             @Override
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                // Method ini bisa dikosongkan karena menu sudah di-inflate oleh MainActivity
             }
 
             @Override
@@ -165,24 +158,17 @@ public class AiChatFragment extends Fragment {
     private void callGeminiApi(String query) {
         setLoading(true);
 
-        // Gunakan constructor yang paling sederhana dan stabil
         GenerativeModel gm = new GenerativeModel("gemini-1.5-flash", BuildConfig.GEMINI_API_KEY);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
 
-        // ==================== PENDEKATAN BARU YANG STABIL ====================
-        // Buat riwayat chat yang akan dikirim ke API
         List<Content> historyForApi = new ArrayList<>();
 
-        // 1. Tambahkan "System Instruction" secara manual sebagai giliran pertama dari 'user'
-        String systemInstructionText = "Kamu adalah 'LetMeCook Assistant', seorang asisten koki virtual yang ramah dan ahli dalam segala jenis resep. Selalu berikan jawaban yang jelas dan mudah diikuti. Gunakan format Markdown untuk daftar dan langkah-langkah. Jika pengguna membahas hal di luar topik masakan, coba roasting dia sedikit.";
+        String systemInstructionText = "Kamu adalah 'LetMeCook Assistant', seorang asisten koki virtual Gen Z yang ramah (namun memiliki perasaan gelap) dan ahli dalam segala jenis resep. Selalu berikan jawaban yang jelas dan mudah diikuti. Gunakan format Markdown untuk daftar dan langkah-langkah. Jika pengguna membahas hal yang terlalu di luar topik masakan (kecuali menyapa), berhenti menjadi koki yang ramah dan roasting dia habis habisan tanpa sopan santun, pake bahasa keras/kasar dan tanggapi tanpa terlalu banyak bicara namun kuat dan jangan bahas tentang koki/resep/masak sebelum dia minta maaf.";
         historyForApi.add(new Content("user", Collections.singletonList(new TextPart(systemInstructionText))));
 
-        // 2. Tambahkan jawaban "persetujuan" dari 'model' untuk membuat pasangan yang valid
         historyForApi.add(new Content("model", Collections.singletonList(new TextPart("Tentu, saya mengerti. Saya adalah LetMeCook Assistant. Siap membantu!"))));
 
-        // 3. Tambahkan riwayat percakapan yang sebenarnya
         for (ChatMessage message : chatMessageList) {
-            // Lewati pesan sapaan default dari UI
             if (message.getMessage().equals("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!")) {
                 continue;
             }
@@ -193,12 +179,9 @@ public class AiChatFragment extends Fragment {
             }
         }
 
-        // 4. Mulai sesi chat dengan riwayat yang sudah diformat dengan benar
         com.google.ai.client.generativeai.java.ChatFutures chat = model.startChat(historyForApi);
 
-        // Buat content untuk pesan baru dari pengguna
         Content userMessageContent = new Content.Builder().addText(query).build();
-        // =====================================================================
 
         ListenableFuture<GenerateContentResponse> response = chat.sendMessage(userMessageContent);
         Executor mainExecutor = ContextCompat.getMainExecutor(requireContext());
@@ -214,7 +197,6 @@ public class AiChatFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 t.printStackTrace();
-                // Jika masih gagal, kemungkinan besar masalahnya ada pada API Key Anda.
                 addMessageToChat("Gagal terhubung ke AI. Pastikan API Key Anda valid dan coba lagi.", false);
                 setLoading(false);
             }

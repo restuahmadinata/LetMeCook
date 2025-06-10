@@ -30,14 +30,12 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible">
 
-        <!-- ==================== PERUBAHAN DI SINI ==================== -->
         <ImageView
             android:id="@+id/image_view_empty_plate"
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:src="@drawable/ic_empty_plate"
             android:contentDescription="Empty Favorites"/>
-        <!-- ==================== AKHIR PERUBAHAN ==================== -->
 
         <TextView
             android:layout_width="wrap_content"

@@ -1,4 +1,3 @@
-// app/src/main/java/com/miraiprjkt/letmecook/adapter/RecipeAdapter.java
 package com.miraiprjkt.letmecook.adapter;
 
 import android.content.Context;

@@ -7,30 +7,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.model.ChatMessage;
-
 import java.util.List;
-
-// 1. Impor Markwon
 import io.noties.markwon.Markwon;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
-
     private final List<ChatMessage> chatMessages;
-    private final Markwon markwon; // 2. Buat variabel instance untuk Markwon
-
+    private final Markwon markwon;
     private static final int VIEW_TYPE_SENT = 1;
     private static final int VIEW_TYPE_RECEIVED = 2;
 
-    // 3. Ubah constructor untuk menerima Context
     public ChatAdapter(Context context, List<ChatMessage> chatMessages) {
         this.chatMessages = chatMessages;
-        // Inisialisasi Markwon di sini
         this.markwon = Markwon.create(context);
     }
 
@@ -48,7 +39,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_chat_message, parent, false);
-        // 4. Kirim instance Markwon ke ViewHolder
         return new ChatViewHolder(view, markwon);
     }
 
@@ -66,9 +56,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     static class ChatViewHolder extends RecyclerView.ViewHolder {
         private final TextView messageText;
         private final LinearLayout layout;
-        private final Markwon markwon; // 5. Simpan instance Markwon di ViewHolder
+        private final Markwon markwon;
 
-        // 6. Ubah constructor ViewHolder untuk menerima Markwon
         public ChatViewHolder(@NonNull View itemView, Markwon markwon) {
             super(itemView);
             this.messageText = itemView.findViewById(R.id.text_chat_message);
@@ -78,12 +67,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         void bind(ChatMessage chatMessage) {
             if (chatMessage.isFromUser()) {
-                // Pesan dari pengguna: tampilkan sebagai teks biasa
                 messageText.setText(chatMessage.getMessage());
                 messageText.setBackgroundResource(R.drawable.bg_chat_bubble_sent);
                 layout.setGravity(Gravity.END);
             } else {
-                // 7. Pesan dari AI: gunakan Markwon untuk menampilkan Markdown
                 markwon.setMarkdown(messageText, chatMessage.getMessage());
                 messageText.setBackgroundResource(R.drawable.bg_chat_bubble_received);
                 layout.setGravity(Gravity.START);

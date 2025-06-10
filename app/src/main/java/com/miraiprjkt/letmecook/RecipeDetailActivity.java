@@ -15,7 +15,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -23,7 +22,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
@@ -38,25 +36,20 @@ import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
 import com.miraiprjkt.letmecook.network.RetrofitClient;
-
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class RecipeDetailActivity extends AppCompatActivity {
-
     public static final String EXTRA_MEAL_ID = "extra_meal_id";
     public static final String EXTRA_MEAL_NAME = "extra_meal_name";
     private static final String TAG = "RecipeDetailActivity";
-
     private String mealId;
     private ApiService apiService;
     private Random randomGenerator = new Random();
-
     private ImageView imageMealDetailThumb;
     private TextView textMealDetailName, textMealDetailCategory, textMealDetailArea;
     private TextView textMealDetailIngredients, textMealDetailSource;
@@ -71,7 +64,6 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private TextView textViewDetailErrorMessage;
     private MaterialButton buttonDetailRetry;
     private FloatingActionButton fabFavorite;
-
     private DatabaseHelper dbHelper;
     private boolean isFavorite = false;
     private Meal currentMeal;
@@ -199,7 +191,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
             if (offlineMeal != null) {
                 Log.d(TAG, "Meal found in database. Displaying offline data.");
                 currentMeal = offlineMeal;
-                isFavorite = true; // Must be a favorite if it's in the DB
+                isFavorite = true;
                 updateFabIcon();
                 displayRecipeDetails(offlineMeal);
                 showContentState();
@@ -207,7 +199,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 Log.d(TAG, "Meal not in database. Showing network error.");
                 showErrorState("You are offline and this recipe is not saved in your favorites.", true);
             }
-            return; // Stop further execution
+            return;
         }
 
         showLoadingState(true);

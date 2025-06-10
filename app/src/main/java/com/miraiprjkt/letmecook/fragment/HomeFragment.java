@@ -15,17 +15,12 @@ import android.view.animation.LayoutAnimationController;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.model.KeyPath;
@@ -42,24 +37,20 @@ import com.miraiprjkt.letmecook.model.Meal;
 import com.miraiprjkt.letmecook.model.MealList;
 import com.miraiprjkt.letmecook.network.ApiService;
 import com.miraiprjkt.letmecook.network.RetrofitClient;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
-
     private static final String TAG = "HomeFragment";
     private static final long SEARCH_DELAY = 1500;
     private static final int NUMBER_OF_DISCOVER_RECIPES = 8;
-
     private RecyclerView recyclerViewRecipes;
     private RecipeAdapter recipeAdapter;
     private List<Meal> mealList;
@@ -71,17 +62,17 @@ public class HomeFragment extends Fragment {
     private ImageView imageViewNoResultsIcon;
     private TextView textViewNoResultsMessage;
     private MaterialButton buttonRetry;
-
     private Timer searchTimer;
     private String currentSelectedCategoryChipText = "Discover";
     private Random randomGenerator = new Random();
-
     private String lastFailedAction = "";
     private String lastQueryOrCategory = "";
-    private boolean isLoading = false; // Penanda status loading
+    private boolean isLoading = false;
 
     private final List<String> defaultCategoryNames = Arrays.asList(
-            "Beef", "Chicken", "Dessert", "Lamb", "Miscellaneous", "Pasta", "Pork", "Seafood", "Side", "Starter", "Vegan", "Vegetarian", "Breakfast", "Goat"
+            "Beef", "Chicken", "Dessert", "Lamb", "Miscellaneous",
+            "Pasta", "Pork", "Seafood", "Side", "Starter",
+            "Vegan", "Vegetarian", "Breakfast", "Goat"
     );
 
     private final String[] funnyNoResultsMessages = {
@@ -97,7 +88,6 @@ public class HomeFragment extends Fragment {
     };
 
     public HomeFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -165,15 +155,10 @@ public class HomeFragment extends Fragment {
         recipeAdapter = new RecipeAdapter(getContext(), mealList, meal -> {
             if (!isAdded() || getContext() == null) return;
 
-            // ==================== AWAL PERUBAHAN ====================
-
-            // Ganti navigasi fragment dengan Intent untuk membuka Activity
             Intent intent = new Intent(getContext(), RecipeDetailActivity.class);
             intent.putExtra(RecipeDetailActivity.EXTRA_MEAL_ID, meal.getIdMeal());
             intent.putExtra(RecipeDetailActivity.EXTRA_MEAL_NAME, meal.getStrMeal());
             startActivity(intent);
-
-            // ==================== AKHIR PERUBAHAN ====================
         });
         recyclerViewRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewRecipes.setAdapter(recipeAdapter);
@@ -252,7 +237,6 @@ public class HomeFragment extends Fragment {
             Chip firstChip = (Chip) chipGroupCategories.getChildAt(0);
             firstChip.setChecked(true);
             currentSelectedCategoryChipText = "Discover";
-            // Memuat resep discover dipicu dari sini saat awal
             loadDiscoverRecipes();
         }
     }

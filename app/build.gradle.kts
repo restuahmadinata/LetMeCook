@@ -6,7 +6,6 @@ plugins {
 }
 
 android {
-
     namespace = "com.miraiprjkt.letmecook"
     compileSdk = 35
 
@@ -16,7 +15,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val localProperties = Properties()
@@ -49,34 +47,34 @@ android {
 
 dependencies {
 
-    // Tambahkan baris ini untuk Lottie
-    implementation("com.airbnb.android:lottie:6.4.0")
+    // Lottie
+    implementation(libs.lottie)
 
     // Retrofit & Gson Converter (untuk networking)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 
     // Glide (untuk memuat gambar dari URL)
-    implementation("com.github.bumptech.glide:glide:4.12.0")
+    implementation(libs.glide)
     implementation(libs.firebase.crashlytics.buildtools)
-    annotationProcessor("com.github.bumptech.glide:compiler:4.12.0")
+    annotationProcessor(libs.compiler)
 
     // Material Design
-    implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.material)
 
     // Google AI (Gemini)
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation(libs.generativeai)
 
     // Coroutines untuk handle asynchronous call
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
 
-    implementation("com.google.guava:guava:33.2.1-android")
+    implementation(libs.guava)
 
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.gson)
 
     // Markwon untuk merender Markdown di TextView
-    implementation("io.noties.markwon:core:4.6.2")
+    implementation(libs.core)
 
     implementation(libs.navigation.fragment.ktx)
     implementation(libs.navigation.ui.ktx)

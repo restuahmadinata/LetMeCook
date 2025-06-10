@@ -5,19 +5,15 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
 import com.miraiprjkt.letmecook.model.Meal;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
-
     private static final String DATABASE_NAME = "letmecook_favorites.db";
     private static final int DATABASE_VERSION = 1;
-
     public static final String TABLE_FAVORITES = "favorites";
-    public static final String COLUMN_ID = "_id"; // Standard practice
+    public static final String COLUMN_ID = "_id";
     public static final String COLUMN_MEAL_ID = "meal_id";
     public static final String COLUMN_MEAL_NAME = "meal_name";
     public static final String COLUMN_MEAL_THUMB = "meal_thumb";
@@ -47,7 +43,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 .append(COLUMN_MEAL_YOUTUBE).append(" TEXT, ")
                 .append(COLUMN_MEAL_SOURCE).append(" TEXT");
 
-        // Add columns for all 20 ingredients and 20 measures
         for (int i = 1; i <= 20; i++) {
             createTableQueryBuilder.append(", strIngredient").append(i).append(" TEXT");
             createTableQueryBuilder.append(", strMeasure").append(i).append(" TEXT");
@@ -76,7 +71,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_MEAL_YOUTUBE, meal.getStrYoutube());
         values.put(COLUMN_MEAL_SOURCE, meal.getStrSource());
 
-        // Add all ingredients and measures
         values.put("strIngredient1", meal.getStrIngredient1());
         values.put("strMeasure1", meal.getStrMeasure1());
         values.put("strIngredient2", meal.getStrIngredient2());
@@ -156,7 +150,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 meal.setStrYoutube(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEAL_YOUTUBE)));
                 meal.setStrSource(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEAL_SOURCE)));
 
-                // Set all ingredients and measures
                 meal.setStrIngredient1(cursor.getString(cursor.getColumnIndexOrThrow("strIngredient1")));
                 meal.setStrMeasure1(cursor.getString(cursor.getColumnIndexOrThrow("strMeasure1")));
                 meal.setStrIngredient2(cursor.getString(cursor.getColumnIndexOrThrow("strIngredient2")));
@@ -225,7 +218,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             meal.setStrYoutube(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEAL_YOUTUBE)));
             meal.setStrSource(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_MEAL_SOURCE)));
 
-            // Set all ingredients and measures
             meal.setStrIngredient1(cursor.getString(cursor.getColumnIndexOrThrow("strIngredient1")));
             meal.setStrMeasure1(cursor.getString(cursor.getColumnIndexOrThrow("strMeasure1")));
             meal.setStrIngredient2(cursor.getString(cursor.getColumnIndexOrThrow("strIngredient2")));

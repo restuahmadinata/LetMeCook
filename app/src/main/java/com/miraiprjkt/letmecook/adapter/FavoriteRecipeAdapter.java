@@ -7,19 +7,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.bumptech.glide.Glide;
 import com.miraiprjkt.letmecook.R;
 import com.miraiprjkt.letmecook.RecipeDetailActivity;
 import com.miraiprjkt.letmecook.model.Meal;
-
 import java.util.List;
 
 public class FavoriteRecipeAdapter extends RecyclerView.Adapter<FavoriteRecipeAdapter.ViewHolder> {
-
     private Context context;
     private List<Meal> favoriteMeals;
 

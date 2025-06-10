@@ -1,4 +1,3 @@
-// app/src/main/java/com/miraiprjkt/letmecook/model/CategoryList.java
 package com.miraiprjkt.letmecook.model;
 
 import com.google.gson.annotations.SerializedName;

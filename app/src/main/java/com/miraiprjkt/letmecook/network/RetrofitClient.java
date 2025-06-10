@@ -1,4 +1,3 @@
-// app/src/main/java/com/miraiprjkt/letmecook/network/RetrofitClient.java
 package com.miraiprjkt.letmecook.network;
 
 import retrofit2.Retrofit;

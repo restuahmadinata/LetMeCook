@@ -18,7 +18,7 @@
     <fragment
         android:id="@+id/navigation_ai_chat"
         android:name="com.miraiprjkt.letmecook.fragment.AiChatFragment"
-        android:label="AI Assistant"
+        android:label="LetAICook"
         tools:layout="@layout/fragment_ai_chat" />
     <fragment
         android:id="@+id/navigation_settings"
