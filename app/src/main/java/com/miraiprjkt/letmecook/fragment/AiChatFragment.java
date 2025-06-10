@@ -92,7 +92,7 @@ public class AiChatFragment extends Fragment {
     private void setupChat() {
         chatMessageList = chatHistoryManager.loadChatHistory();
         if (chatMessageList.isEmpty()) {
-            chatMessageList.add(new ChatMessage("Halo! Saya asisten masakmu. Tanyakan apa saja seputar resep!", false));
+            chatMessageList.add(new ChatMessage(" Hello! I'm your cooking assistant. Ask me anything about recipes!", false));
         }
 
         chatAdapter = new ChatAdapter(requireContext(), chatMessageList);
