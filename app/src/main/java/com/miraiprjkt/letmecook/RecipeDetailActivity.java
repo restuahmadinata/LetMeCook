@@ -296,6 +296,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     int marginBottom = getResources().getDimensionPixelSize(R.dimen.instruction_section_header_margin_bottom);
                     params.setMargins(0, marginTop, 0, marginBottom);
                     sectionHeaderView.setLayoutParams(params);
+                    sectionHeaderView.setTextIsSelectable(true); // <--- PERUBAHAN DI SINI
                     sectionHeaderView.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_TitleSmall);
                     layoutInstructionsContainer.addView(sectionHeaderView);
                 } else {
@@ -303,7 +304,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     if (instructionText.isEmpty()) continue;
                     View stepView = inflater.inflate(R.layout.item_instruction_step, layoutInstructionsContainer, false);
                     ((TextView) stepView.findViewById(R.id.text_step_number)).setText(String.valueOf(actualStepNumber++));
-                    ((TextView) stepView.findViewById(R.id.text_step_instruction)).setText(instructionText);
+
+                    TextView instructionTextView = stepView.findViewById(R.id.text_step_instruction);
+                    instructionTextView.setText(instructionText);
+                    instructionTextView.setTextIsSelectable(true);
+
                     layoutInstructionsContainer.addView(stepView);
                 }
             }
