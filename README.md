@@ -1,74 +1,66 @@
-# LetMeCook 🍳
-
-*Aplikasi resep yang tidak hanya memberimu ide, tapi juga teman ngobrol di dapur.*
+# LetMeCook
 
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84)
 ![Language](https://img.shields.io/badge/Language-Java-DB4437)
 ![API](https://img.shields.io/badge/API-29%2B-blue)
 
-LetMeCook adalah aplikasi resep makanan dan minuman yang dibuat untuk menemukan inspirasi memasak setiap hari. Jelajahi berbagai kategori, cari resep favoritmu, dan jika kamu bingung, tanyakan saja pada asisten AI kami yang siap membantumu (atau me-*roasting*-mu).
+LetMeCook is a food and beverage recipe application created to find daily cooking inspiration. Explore various categories, search for your favorite recipes, and if you're confused, just ask our AI assistant who is ready to help you (or roast you).
 
-## ✨ Fitur-Fitur Keren
+## Cool Features
 
--   **🔍 Pencarian & Kategori**: Cari resep berdasarkan nama atau jelajahi kategori yang ada. Dari hidangan utama hingga pencuci mulut, semua ada di sini (tergantung API nya sih).
--   **🤖 Asisten AI "LetAICook"**: Bingung dengan langkah-langkah resep? Atau butuh ide lain? Tanyakan pada asisten AI kami yang didukung oleh **Google AI (Gemini)**. Dia ramah, tapi jangan coba-tanya di luar topik masak, ya!
--   **❤️ Resep Favorit**: Simpan resep yang kamu suka dengan satu ketukan. Semua resep favoritmu akan tersimpan secara lokal dan bisa diakses bahkan saat *offline*.
--   **📱 Tampilan Intuitif**: Antarmuka yang bersih dan mudah digunakan, dengan dukungan tema **Light & Dark Mode** agar nyaman di mata, kapan pun kamu memasak.
+-   ** Search & Categories**: Search for recipes by name or explore existing categories. From main dishes to desserts, everything is here (depends on the API though).
+-   ** AI Assistant "LetAICook"**: Confused with recipe steps? Or need other ideas? Ask our AI assistant powered by **Google AI (Gemini)**. It's friendly, but don't try asking off-topic cooking questions!
+-   ** Favorite Recipes**: Save recipes you like with one tap. All your favorite recipes will be saved locally and can be accessed even when offline.
+-   ** Intuitive Display**: Clean and easy-to-use interface, with **Light & Dark Mode** theme support to be easy on the eyes, whenever you cook.
 
-### 📸 Tampilan Aplikasi
+### App Screenshots
 
-**1. Tampilan Utama (Beranda & Pencarian)**
+| Feature | Screenshot |
+|---------|-----------|
+| Main View (Home & Search) | ![Main View](ss_home.png) |
+| Recipe Detail Page | ![Recipe Detail](ss_detail.png) |
+| AI Assistant "LetAICook" Feature | ![AI Assistant](ss_ai.png) |
 
-![Tampilan Utama](ss_home.png)
+## Technical Implementation
 
-**2. Halaman Detail Resep**
+This application is built with a focus on modern Android practices and relevant components.
 
-![Detail Resep](ss_detail.png)
+-   **Architecture & Navigation**:
+    -   Uses **Single-Activity** architecture with multiple `Fragment`s (`HomeFragment`, `FavoritesFragment`, `AiChatFragment`, `SettingsFragment`).
+    -   Navigation between `Fragment`s is fully managed by **Navigation Component**.
 
-**3. Fitur Asisten AI "LetAICook"**
+-   **Data Fetching (Networking)**:
+    -   Recipe data is fetched from **TheMealDB API**.
+    -   Network connections are handled by **Retrofit** with **Gson** converter, which is an industry standard for REST API communication on Android.
+    -   To load images from URLs, this application relies on the **Glide** library.
 
-![Asisten AI](ss_ai.png)
+-   **Local Data Storage**:
+    -   **SQLite**: Favorite recipes are stored persistently using `SQLiteOpenHelper`, allowing offline access.
+    -   **SharedPreferences**: Used to store lightweight data such as theme preferences (dark/light) and chat history with AI.
 
-## 🛠️ Implementasi Teknis
-
-Aplikasi ini dibangun dengan fokus pada praktik Android modern dan komponen yang relevan.
-
--   **Arsitektur & Navigasi**:
-    -   Menggunakan arsitektur **Single-Activity** dengan beberapa `Fragment` (`HomeFragment`, `FavoritesFragment`, `AiChatFragment`, `SettingsFragment`).
-    -   Navigasi antar-`Fragment` dikelola sepenuhnya oleh **Navigation Component**.
-
--   **Pengambilan Data (Networking)**:
-    -   Data resep diambil dari **TheMealDB API**.
-    -   Koneksi jaringan ditangani oleh **Retrofit** dengan *converter* **Gson**, yang merupakan standar industri untuk komunikasi REST API di Android.
-    -   Untuk memuat gambar dari URL, aplikasi ini mengandalkan *library* **Glide**.
-
--   **Penyimpanan Data Lokal**:
-    -   **SQLite**: Resep favorit disimpan secara persisten menggunakan `SQLiteOpenHelper`, memungkinkan akses *offline*.
-    -   **SharedPreferences**: Digunakan untuk menyimpan data ringan seperti preferensi tema (gelap/terang) dan riwayat obrolan dengan AI.
-
--   **Fitur Inovatif**:
-    -   Integrasi dengan **Google AI (Gemini)** untuk fitur asisten masak. *Callback* dari API ditangani secara asinkron untuk menjaga performa UI.
-    -   Tampilan respons AI menggunakan *library* **Markwon** untuk merender teks Markdown.
+-   **Innovative Features**:
+    -   Integration with **Google AI (Gemini)** for cooking assistant feature. Callbacks from the API are handled asynchronously to maintain UI performance.
+    -   AI response display uses the **Markwon** library to render Markdown text.
 
 -   **UI & UX**:
-    -   UI dibangun menggunakan komponen **Material 3**.
-    -   Daftar data yang dinamis ditampilkan menggunakan `RecyclerView` untuk efisiensi memori.
-    -   Animasi *loading* yang menarik menggunakan `Lottie`.
+    -   UI is built using **Material 3** components.
+    -   Dynamic data lists are displayed using `RecyclerView` for memory efficiency.
+    -   Attractive loading animations using `Lottie`.
 
-## 🚀 Cara Penggunaan
+## How to Use
 
-1.  **Clone Repositori**
+1.  **Clone Repository**
     ```bash
     git clone https://github.com/restuahmadinata/letmecook.git
     ```
-2.  **Tambahkan API Key**
-    -   Buat berkas `local.properties` di direktori *root* proyek.
-    -   Tambahkan *API key* Anda untuk Gemini AI dengan format berikut:
+2.  **Add API Key**
+    -   Create a `local.properties` file in the project root directory.
+    -   Add your API key for Gemini AI with the following format:
         ```properties
         GEMINI_API_KEY="YOUR_API_KEY_HERE"
         ```
-    -   *Build* dan jalankan aplikasi.
+    -   Build and run the application.
 
-## 📄 Lisensi
+## 📄 License
 
-Lisensi apaan coeg? :"v
+What license, dude? :"v
