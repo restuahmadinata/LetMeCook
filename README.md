@@ -6,20 +6,18 @@
 
 LetMeCook is a food and beverage recipe application created to find daily cooking inspiration. Explore various categories, search for your favorite recipes, and if you're confused, just ask our AI assistant who is ready to help you (or roast you).
 
-## Cool Features
+## Features
 
--   ** Search & Categories**: Search for recipes by name or explore existing categories. From main dishes to desserts, everything is here (depends on the API though).
--   ** AI Assistant "LetAICook"**: Confused with recipe steps? Or need other ideas? Ask our AI assistant powered by **Google AI (Gemini)**. It's friendly, but don't try asking off-topic cooking questions!
--   ** Favorite Recipes**: Save recipes you like with one tap. All your favorite recipes will be saved locally and can be accessed even when offline.
--   ** Intuitive Display**: Clean and easy-to-use interface, with **Light & Dark Mode** theme support to be easy on the eyes, whenever you cook.
+-   **Search & Categories**: Search for recipes by name or explore existing categories. From main dishes to desserts, everything is here (depends on the API though).
+-   **AI Assistant "LetAICook"**: Confused with recipe steps? Or need other ideas? Ask our AI assistant powered by **Google AI (Gemini)**. It's friendly, but don't try asking off-topic cooking questions!
+-   **Favorite Recipes**: Save recipes you like with one tap. All your favorite recipes will be saved locally and can be accessed even when offline.
+-   **Intuitive Display**: Clean and easy-to-use interface, with Light & Dark Mode theme support to be easy on the eyes, whenever you cook.
 
 ### App Screenshots
 
-| Feature | Screenshot |
-|---------|-----------|
-| Main View (Home & Search) | ![Main View](ss_home.png) |
-| Recipe Detail Page | ![Recipe Detail](ss_detail.png) |
-| AI Assistant "LetAICook" Feature | ![AI Assistant](ss_ai.png) |
+| Main View (Home & Search) | Recipe Detail Page | AI Assistant "LetAICook" Feature |
+|---------------------------|---------------------|---------------------------------|
+| ![Main View](ss_home.png) | ![Recipe Detail](ss_detail.png) | ![AI Assistant](ss_ai.png) |
 
 ## Technical Implementation
 
@@ -63,4 +61,4 @@ This application is built with a focus on modern Android practices and relevant 
 
 ## 📄 License
 
-What license, dude? :"v
+License? :"v
